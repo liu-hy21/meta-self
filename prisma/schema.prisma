@@ -1,0 +1,523 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum DataSource {
+  MANUAL
+  PASTE
+}
+
+enum TechStackStatus {
+  PROFICIENT
+  LEARNING
+  DEPRECATED
+}
+
+enum RelationKind {
+  FRIEND
+  ROMANCE
+  FAMILY
+  OTHER
+}
+
+enum FinanceLiteracyKind {
+  LEARNING
+  DECISION
+}
+
+enum ReportType {
+  BIWEEKLY
+  MONTHLY
+}
+
+enum ReportStatus {
+  DRAFT
+  FINALIZED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  displayName  String?
+  timezone     String   @default("Asia/Shanghai")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  bodyProfile          BodyProfile?
+  bodyDiet             BodyDiet?
+  bodySleepHabit       BodySleepHabit?
+  bodyExam             BodyExam?
+  bodyInfoLogs         BodyInfoLog[]
+  aiAdviceLogs         AiAdviceLog[]
+  mindProfile          MindProfile?
+  mindInfoLogs         MindInfoLog[]
+  workProfile          WorkProfile?
+  workInfoLogs         WorkInfoLog[]
+  relationProfile      RelationProfile?
+  relationInfoLogs     RelationInfoLog[]
+  financeProfile       FinanceProfile?
+  financeInfoLogs      FinanceInfoLog[]
+  playProfile          PlayProfile?
+  playDistricts        PlayDistrict[]
+  trips                Trip[]
+  vitalMetrics         VitalMetric[]
+  sleepLogs            SleepLog[]
+  mealLogs             MealLog[]
+  moodLogs             MoodLog[]
+  companySnapshots     WorkCompanySnapshot[]
+  techStackItems       TechStackItem[]
+  expressionReviews    ExpressionReview[]
+  relationPeople       RelationPerson[]
+  relationInteractions RelationInteraction[]
+  assetSnapshots       FinanceAssetSnapshot[]
+  literacyLogs         FinanceLiteracyLog[]
+  reports              Report[]
+  reportSchedule       ReportSchedule?
+}
+
+model BodyProfile {
+  id        String    @id @default(cuid())
+  userId    String    @unique
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  heightCm  Float?
+  weightKg  Float?
+  birthDate DateTime?
+  gender    String?
+  bloodType String?
+  chestCm   Float?
+  waistCm   Float?
+  thighCm   Float?
+  notes     String?   @db.Text
+  updatedAt DateTime  @updatedAt
+}
+
+model BodyDiet {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  proteinFoods  String?  @db.Text
+  fatFoods      String?  @db.Text
+  carbFoods     String?  @db.Text
+  vitaminFoods  String?  @db.Text
+  updatedAt     DateTime @updatedAt
+}
+
+model BodySleepHabit {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  durationHours Float?
+  bedtime       String?
+  wakeTime      String?
+  quality       String?
+  updatedAt     DateTime @updatedAt
+}
+
+model BodyExam {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  examDate         DateTime?
+  heart            String?
+  lung             String?
+  liver            String?
+  gallbladder      String?
+  spleen           String?
+  kidney           String?
+  thyroid          String?
+  wbc              String?
+  rbc              String?
+  hemoglobin       String?
+  platelets        String?
+  urineProtein     String?
+  urineGlucose     String?
+  urineBlood       String?
+  glucose          String?
+  uricAcid         String?
+  cholesterol      String?
+  triglycerides    String?
+  ldl              String?
+  alt              String?
+  creatinine       String?
+  systolic         String?
+  diastolic        String?
+  restingHeartRate String?
+  updatedAt        DateTime  @updatedAt
+}
+
+model BodyInfoLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  writtenOn DateTime @default(now())
+  body      String?  @db.Text
+  diet      String?  @db.Text
+  sleep     String?  @db.Text
+  exam      String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([userId, writtenOn])
+}
+
+model AiAdviceLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  content   String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model MindProfile {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emotionWords  String?  @db.Text
+  emotionLevel  Int?
+  psycheNote    String?  @db.Text
+  stressNote    String?  @db.Text
+  updatedAt     DateTime @updatedAt
+}
+
+model MindInfoLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  writtenOn DateTime @default(now())
+  emotion   String?  @db.Text
+  psyche    String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([userId, writtenOn])
+}
+
+model WorkProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName String?
+  department  String?
+  role        String?
+  joinedOn    String?
+  proficient   String?  @db.Text
+  learning     String?  @db.Text
+  retired      String?  @db.Text
+  studyHistory String?  @db.Text
+  updatedAt   DateTime @updatedAt
+}
+
+model WorkInfoLog {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  writtenOn  DateTime @default(now())
+  occasion   String?  @db.Text
+  outcome    String?  @db.Text
+  nextChange String?  @db.Text
+  createdAt  DateTime @default(now())
+
+  @@index([userId, writtenOn])
+}
+
+model RelationProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  friends   String?  @db.Text
+  romance   String?  @db.Text
+  family    String?  @db.Text
+  other     String?  @db.Text
+  updatedAt DateTime @updatedAt
+}
+
+model RelationInfoLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  writtenOn DateTime @default(now())
+  person    String?
+  happened  String?  @db.Text
+  feeling   Int?
+  createdAt DateTime @default(now())
+
+  @@index([userId, writtenOn])
+}
+
+model FinanceProfile {
+  id               String   @id @default(cuid())
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cashCents        Int?
+  investmentCents  Int?
+  liabilityCents   Int?
+  updatedAt        DateTime @updatedAt
+}
+
+model FinanceInfoLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  writtenOn DateTime @default(now())
+  learned   String?  @db.Text
+  decision  String?  @db.Text
+  outcome   String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([userId, writtenOn])
+}
+
+model PlayProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projects  String?  @db.Text
+  updatedAt DateTime @updatedAt
+}
+
+model PlayDistrict {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  district  String
+  project   String
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model Trip {
+  id        String      @id @default(cuid())
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  traveler  String?
+  note      String?     @db.Text
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  entries   TripEntry[]
+
+  @@index([userId, createdAt])
+}
+
+model TripEntry {
+  id          String    @id @default(cuid())
+  tripId      String
+  trip        Trip      @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  sortAt      DateTime
+  kind        String
+  origin      String?
+  destination String?
+  flightNo    String?
+  cabin       String?
+  departTime  String?
+  arriveTime  String?
+  terminal    String?
+  fareCents   Int?
+  taxCents    Int?
+  totalCents  Int?
+  baggage     String?   @db.Text
+  remark      String?   @db.Text
+  hotelName   String?
+  checkIn     DateTime?
+  checkOut    DateTime?
+  nights      Int?
+  paidCents   Int?
+  includes    String?
+  happenedOn  DateTime?
+  timeLabel   String?
+  body        String?   @db.Text
+  createdAt   DateTime  @default(now())
+
+  @@index([tripId, sortAt])
+}
+
+model VitalMetric {
+  id         String     @id @default(cuid())
+  userId     String
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name       String
+  value      String
+  unit       String?
+  measuredAt DateTime
+  source     DataSource @default(MANUAL)
+  notes      String?    @db.Text
+  createdAt  DateTime   @default(now())
+
+  @@index([userId, measuredAt])
+}
+
+model SleepLog {
+  id            String     @id @default(cuid())
+  userId        String
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  occurredAt    DateTime
+  durationHours Float
+  note          String?    @db.Text
+  source        DataSource @default(MANUAL)
+  createdAt     DateTime   @default(now())
+
+  @@index([userId, occurredAt])
+}
+
+model MealLog {
+  id          String     @id @default(cuid())
+  userId      String
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  occurredAt  DateTime
+  description String     @db.Text
+  satiety     Int?
+  source      DataSource @default(MANUAL)
+  createdAt   DateTime   @default(now())
+
+  @@index([userId, occurredAt])
+}
+
+model MoodLog {
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  calendarDate DateTime   @db.Date
+  occurredAt   DateTime?
+  score        Int
+  note         String?    @db.Text
+  source       DataSource @default(MANUAL)
+  createdAt    DateTime   @default(now())
+
+  @@unique([userId, calendarDate])
+  @@index([userId, calendarDate])
+}
+
+model WorkCompanySnapshot {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName String
+  role        String?
+  note        String?  @db.Text
+  effectiveAt DateTime @default(now())
+  isCurrent   Boolean  @default(true)
+
+  @@index([userId, isCurrent])
+}
+
+model TechStackItem {
+  id        String          @id @default(cuid())
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  status    TechStackStatus
+  note      String?         @db.Text
+  updatedAt DateTime        @updatedAt
+
+  @@unique([userId, name])
+}
+
+model ExpressionReview {
+  id              String     @id @default(cuid())
+  userId          String
+  user            User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  occurredAt      DateTime
+  context         String     @db.Text
+  outcome         String?    @db.Text
+  nextImprovement String?    @db.Text
+  source          DataSource @default(MANUAL)
+  createdAt       DateTime   @default(now())
+
+  @@index([userId, occurredAt])
+}
+
+model RelationPerson {
+  id           String               @id @default(cuid())
+  userId       String
+  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  note         String?              @db.Text
+  createdAt    DateTime             @default(now())
+  kinds        RelationPersonKind[]
+  interactions RelationInteraction[]
+}
+
+model RelationPersonKind {
+  personId String
+  person   RelationPerson @relation(fields: [personId], references: [id], onDelete: Cascade)
+  kind     RelationKind
+
+  @@id([personId, kind])
+}
+
+model RelationInteraction {
+  id           String     @id @default(cuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  personId     String
+  person       RelationPerson @relation(fields: [personId], references: [id], onDelete: Cascade)
+  occurredAt   DateTime
+  note         String     @db.Text
+  feelingScore Int
+  source       DataSource @default(MANUAL)
+  createdAt    DateTime   @default(now())
+
+  @@index([userId, occurredAt])
+}
+
+model FinanceAssetSnapshot {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  asOfDate        DateTime
+  cashCents       Int      @default(0)
+  investmentCents Int      @default(0)
+  liabilityCents  Int      @default(0)
+  note            String?  @db.Text
+  createdAt       DateTime @default(now())
+
+  @@index([userId, asOfDate])
+}
+
+model FinanceLiteracyLog {
+  id          String              @id @default(cuid())
+  userId      String
+  user        User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  occurredAt  DateTime
+  kind        FinanceLiteracyKind
+  content     String              @db.Text
+  outcomeNote String?             @db.Text
+  source      DataSource          @default(MANUAL)
+  createdAt   DateTime            @default(now())
+
+  @@index([userId, occurredAt])
+}
+
+model Report {
+  id              String       @id @default(cuid())
+  userId          String
+  user            User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type            ReportType
+  periodStart     DateTime
+  periodEnd       DateTime
+  status          ReportStatus @default(DRAFT)
+  title           String
+  contentMarkdown String       @db.LongText
+  citationsJson   Json
+  generatedBy     String
+  createdAt       DateTime     @default(now())
+  finalizedAt     DateTime?
+
+  @@index([userId, type, periodStart])
+}
+
+model ReportSchedule {
+  userId          String    @id
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastBiweeklyAt  DateTime?
+  lastMonthlyAt   DateTime?
+  nextBiweeklyDue DateTime?
+  nextMonthlyDue  DateTime?
+}
