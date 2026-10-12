@@ -212,8 +212,7 @@ export function BoardView({ snapshot }: { snapshot: BoardSnapshot }) {
             {(
               [
                 ["旅游", snapshot.play?.travel, "travel"],
-                ["玩的项目", snapshot.play?.projects, "projects"],
-                ["各大商圈", snapshot.play?.districts, "districts"],
+                ["各个地点", snapshot.play?.districts, "districts"],
               ] as const
             ).map(([label, text, key]) =>
               text ? (

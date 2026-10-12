@@ -13,7 +13,7 @@ export function DistrictBlock({ districts, edit }: { districts: PlayDistrict[]; 
   return (
     <section className="pixel-box p-4">
       <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="text-base font-semibold">各大商圈</h2>
+        <h2 className="text-base font-semibold">各个地点</h2>
         {editing ? (
           <Link href={base} className={backClass}>
             返回

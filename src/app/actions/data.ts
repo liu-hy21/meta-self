@@ -268,20 +268,6 @@ export async function upsertFinanceProfile(formData: FormData) {
   redirect("/finance/profile");
 }
 
-export async function upsertPlayProfile(formData: FormData) {
-  const userId = await getAppUserId();
-  const data = {
-    projects: optionalText(formData, "projects"),
-  };
-  await prisma.playProfile.upsert({
-    where: { userId },
-    create: { userId, ...data },
-    update: data,
-  });
-  revalidateApp();
-  redirect("/finance/profile?tab=play");
-}
-
 export async function createPlayDistrict(formData: FormData) {
   const userId = await getAppUserId();
   const district = optionalText(formData, "district");

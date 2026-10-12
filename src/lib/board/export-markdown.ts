@@ -31,7 +31,7 @@ function line(label: string, value: string | number | null | undefined) {
 }
 
 export async function buildContextMarkdown(userId: string) {
-  const [profile, diet, sleepHabit, exam, logs, adviceLogs, mind, mindLogs, work, workLogs, relation, relationLogs, finance, financeLogs, play, districts, trips] =
+  const [profile, diet, sleepHabit, exam, logs, adviceLogs, mind, mindLogs, work, workLogs, relation, relationLogs, finance, financeLogs, districts, trips] =
     await Promise.all([
     prisma.bodyProfile.findUnique({ where: { userId } }),
     prisma.bodyDiet.findUnique({ where: { userId } }),
@@ -65,7 +65,6 @@ export async function buildContextMarkdown(userId: string) {
       where: { userId },
       orderBy: { createdAt: "asc" },
     }),
-    prisma.playProfile.findUnique({ where: { userId } }),
     prisma.playDistrict.findMany({
       where: { userId },
       orderBy: { createdAt: "asc" },
@@ -309,9 +308,7 @@ export async function buildContextMarkdown(userId: string) {
       }
     }
   }
-  chunks.push("\n#### 玩的项目\n\n");
-  chunks.push(play?.projects ? `${play.projects}\n` : "尚未填写。\n");
-  chunks.push("\n#### 各大商圈\n\n");
+  chunks.push("\n#### 各个地点\n\n");
   if (districts.length === 0) {
     chunks.push("尚未填写。\n");
   }

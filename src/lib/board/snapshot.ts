@@ -71,7 +71,6 @@ export type BoardFinance = {
 export type BoardPlay = {
   recordedAt: Date;
   travel: string | null;
-  projects: string | null;
   districts: string | null;
 };
 
@@ -146,7 +145,7 @@ function glucoseTrack(value: number): RangeTrack | undefined {
 }
 
 export async function loadBoardSnapshot(userId: string): Promise<BoardSnapshot> {
-  const [profile, diet, sleepHabit, exam, logs, mind, mindLogs, work, workLogs, relation, relationLogs, finance, financeLogs, play, trips, districts] =
+  const [profile, diet, sleepHabit, exam, logs, mind, mindLogs, work, workLogs, relation, relationLogs, finance, financeLogs, trips, districts] =
     await Promise.all([
     prisma.bodyProfile.findUnique({ where: { userId } }),
     prisma.bodyDiet.findUnique({ where: { userId } }),
@@ -181,7 +180,6 @@ export async function loadBoardSnapshot(userId: string): Promise<BoardSnapshot> 
       orderBy: { writtenOn: "desc" },
       take: 3,
     }),
-    prisma.playProfile.findUnique({ where: { userId } }),
     prisma.trip.findMany({
       where: { userId },
       orderBy: { updatedAt: "desc" },
@@ -412,13 +410,12 @@ export async function loadBoardSnapshot(userId: string): Promise<BoardSnapshot> 
 
   const travel = trips.map((trip) => trip.title).join("\n");
   const districtText = districts.map((item) => `${item.district} · ${item.project}`).join("\n");
-  const recordedCandidates = [play?.updatedAt, trips[0]?.updatedAt, districts[0]?.createdAt].filter((date): date is Date => date != null);
+  const recordedCandidates = [trips[0]?.updatedAt, districts[0]?.createdAt].filter((date): date is Date => date != null);
   const boardPlay: BoardPlay | null =
-    play?.projects || districtText || travel
+    districtText || travel
       ? {
           recordedAt: recordedCandidates.reduce((latest, date) => (date > latest ? date : latest)),
           travel: travel || null,
-          projects: play?.projects ?? null,
           districts: districtText || null,
         }
       : null;

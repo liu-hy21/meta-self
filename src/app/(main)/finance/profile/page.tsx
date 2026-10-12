@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { upsertFinanceProfile, upsertPlayProfile } from "@/app/actions/data";
+import { upsertFinanceProfile } from "@/app/actions/data";
 import { SaveButton } from "@/components/body/save-button";
 import { DistrictBlock } from "@/components/play/district-block";
 import { TravelBlock } from "@/components/play/travel-block";
@@ -13,8 +13,6 @@ const moneyFields = [
   ["investmentYuan", "investmentCents", "投资"],
   ["liabilityYuan", "liabilityCents", "负债"],
 ] as const;
-
-const playBlocks = [["projects", "玩的项目", "球、游戏、展览"]] as const;
 
 function yuanInput(cents: number | null | undefined) {
   if (cents == null) return "";
@@ -32,10 +30,9 @@ export default async function FinanceProfilePage({
   searchParams: Promise<{ edit?: string; tab?: string; trip?: string; add?: string }>;
 }) {
   const user = await getAppUser();
-  const [{ edit, tab, trip, add }, finance, play, trips, districts] = await Promise.all([
+  const [{ edit, tab, trip, add }, finance, trips, districts] = await Promise.all([
     searchParams,
     prisma.financeProfile.findUnique({ where: { userId: user.id } }),
-    prisma.playProfile.findUnique({ where: { userId: user.id } }),
     prisma.trip.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
@@ -59,40 +56,6 @@ export default async function FinanceProfilePage({
       {playTab ? (
         <>
         <TravelBlock trips={trips} edit={edit} tripId={trip} add={add} />
-        {playBlocks.map(([name, title, placeholder]) => {
-          const editing = edit === name;
-          return (
-            <section key={name} className="pixel-box p-4">
-              <div className="mb-4 flex items-center justify-between gap-3">
-                <h2 className="text-base font-semibold">{title}</h2>
-                {editing ? (
-                  <Link href="/finance/profile?tab=play" className={backClass}>
-                    返回
-                  </Link>
-                ) : (
-                  <Link href={`/finance/profile?tab=play&edit=${name}`} className={submitClass()}>
-                    修改
-                  </Link>
-                )}
-              </div>
-              {editing ? (
-                <form action={upsertPlayProfile} className="grid gap-4">
-                  {playBlocks
-                    .filter(([field]) => field !== name)
-                    .map(([field]) => (
-                      <input key={field} type="hidden" name={field} value={play?.[field] ?? ""} />
-                    ))}
-                  <textarea id={name} name={name} rows={4} placeholder={placeholder} className={fieldClass()} defaultValue={play?.[name] ?? ""} />
-                  <SaveButton />
-                </form>
-              ) : (
-                <article className="border-2 border-[var(--ink)] bg-[var(--panel)] px-4 py-3">
-                  <p className="whitespace-pre-wrap text-sm text-[var(--gold-deep)]">{play?.[name] || "未填"}</p>
-                </article>
-              )}
-            </section>
-          );
-        })}
         <DistrictBlock districts={districts} edit={edit} />
         </>
       ) : (
