@@ -9,6 +9,7 @@ import {
 } from "@prisma/client";
 import { z } from "zod";
 
+import { articleTopicLabel } from "@/lib/library-article";
 import { getAppUserId } from "@/lib/user";
 import { calendarDateInTimezone } from "@/lib/dates";
 import { prisma } from "@/lib/db";
@@ -30,6 +31,7 @@ function revalidateApp() {
   revalidatePath("/body/sleep");
   revalidatePath("/body/meals");
   revalidatePath("/body/vitals");
+  revalidatePath("/library/article", "layout");
 }
 
 export async function upsertBodyProfile(formData: FormData) {
@@ -276,6 +278,22 @@ export async function createPlayDistrict(formData: FormData) {
   await prisma.playDistrict.create({ data: { userId, district, project } });
   revalidateApp();
   redirect("/finance/profile?tab=play");
+}
+
+export async function createLibraryArticleEntry(formData: FormData) {
+  const userId = await getAppUserId();
+  const topic = optionalText(formData, "topic");
+  const body = optionalText(formData, "body");
+  if (!topic || !articleTopicLabel(topic) || !body) return;
+  await prisma.libraryArticleEntry.create({
+    data: {
+      userId,
+      topic,
+      body,
+    },
+  });
+  revalidateApp();
+  redirect(`/library/article/${topic}`);
 }
 
 function optionalDate(formData: FormData, key: string) {

@@ -2,6 +2,9 @@
 
 import { usePathname } from "next/navigation";
 
+import { articleTopicLabel } from "@/lib/library-article";
+import { drawToolLabel } from "@/lib/library-draw";
+
 const titles: Record<string, string> = {
   "/": "看板",
   "/body/profile": "身体",
@@ -17,14 +20,29 @@ const titles: Record<string, string> = {
   "/finance/log": "财商日志",
   "/library/video": "视频",
   "/library/article": "图文",
+  "/library/draw": "绘制",
 };
+
+function titleFor(pathname: string) {
+  if (pathname.startsWith("/library/article/")) {
+    const topic = pathname.split("/")[3];
+    const label = topic ? articleTopicLabel(topic) : null;
+    return label ? `图文 · ${label}` : "图文";
+  }
+  if (pathname.startsWith("/library/draw/")) {
+    const tool = pathname.split("/")[3];
+    const label = tool ? drawToolLabel(tool) : null;
+    return label ? `绘制 · ${label}` : "绘制";
+  }
+  return titles[pathname] ?? "身体";
+}
 
 export function TopBar() {
   const pathname = usePathname();
 
   return (
     <header className="flex h-14 shrink-0 items-center border-b-4 border-[var(--ink)] bg-[var(--panel)] px-5">
-      <h1 className="truncate text-sm font-semibold">{titles[pathname] ?? "身体"}</h1>
+      <h1 className="truncate text-sm font-semibold">{titleFor(pathname)}</h1>
     </header>
   );
 }

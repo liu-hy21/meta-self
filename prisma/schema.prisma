@@ -66,6 +66,7 @@ model User {
   playDistricts        PlayDistrict[]
   trips                Trip[]
   libraryVideos        LibraryVideo[]
+  libraryArticleEntries LibraryArticleEntry[]
   vitalMetrics         VitalMetric[]
   sleepLogs            SleepLog[]
   mealLogs             MealLog[]
@@ -341,6 +342,18 @@ model LibraryVideo {
   createdAt  DateTime @default(now())
 
   @@index([userId, createdAt])
+}
+
+model LibraryArticleEntry {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topic     String
+  title     String?
+  body      String   @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([userId, topic, createdAt])
 }
 
 model VitalMetric {
