@@ -36,6 +36,9 @@ yarn-error.log*
 # local video files
 /storage
 
+# wechat screenshots / OCR (local only; export → docs/聊天记录.json)
+/docs/wechat-history/
+
 # vercel
 .vercel
 

@@ -21,6 +21,7 @@ const titles: Record<string, string> = {
   "/library/video": "视频",
   "/library/article": "图文",
   "/library/draw": "绘制",
+  "/library/chat": "聊天记录",
 };
 
 function titleFor(pathname: string) {

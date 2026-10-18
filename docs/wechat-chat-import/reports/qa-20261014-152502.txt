@@ -1,0 +1,6 @@
+﻿QA OK 2026-10-14T15:25:02.6945533+08:00
+file: e:\Hangyu\VibeCoding\React\meta-self\docs\聊天记录.json
+messages: 43
+template short phrase ratio: 5%
+routine script hits: 0
+timeline backward: 0

@@ -1,0 +1,21 @@
+{
+  "batchId": "batch-20260722-01",
+  "contact": "邵冰婵",
+  "source": "screenshot+ocr",
+  "messages": [
+    {
+      "from": "self",
+      "at": "2026年07月22日08:25",
+      "kind": "text",
+      "text": "刚吃完饭",
+      "sourceFrame": "02.png"
+    },
+    {
+      "from": "contact",
+      "at": "2026年07月22日08:25",
+      "kind": "text",
+      "text": "好滴",
+      "sourceFrame": "02.png"
+    }
+  ]
+}

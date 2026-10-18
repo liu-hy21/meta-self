@@ -428,6 +428,29 @@ export async function createBodyInfoLog(formData: FormData) {
   redirect("/body/log");
 }
 
+export async function createMedicalVisitLog(formData: FormData) {
+  const userId = await getAppUserId();
+  const visitedRaw = optionalText(formData, "visitedOn");
+  const visitedOn = visitedRaw ? new Date(`${visitedRaw}T12:00:00.000+08:00`) : new Date();
+  const hospital = optionalText(formData, "hospital");
+  const department = optionalText(formData, "department");
+  const note = optionalText(formData, "note");
+  if (!note && !hospital && !department) return;
+  if (visitedRaw && Number.isNaN(visitedOn.getTime())) return;
+
+  await prisma.medicalVisitLog.create({
+    data: {
+      userId,
+      visitedOn: Number.isNaN(visitedOn.getTime()) ? new Date() : visitedOn,
+      hospital,
+      department,
+      note,
+    },
+  });
+  revalidateApp();
+  redirect("/body/log");
+}
+
 export async function createSleepLog(formData: FormData) {
   const userId = await getAppUserId();
   const durationHours = Number(formData.get("durationHours"));

@@ -31,7 +31,7 @@ function line(label: string, value: string | number | null | undefined) {
 }
 
 export async function buildContextMarkdown(userId: string) {
-  const [profile, diet, sleepHabit, exam, logs, adviceLogs, mind, mindLogs, work, workLogs, relation, relationLogs, finance, financeLogs, districts, trips] =
+  const [profile, diet, sleepHabit, exam, logs, medicalVisits, adviceLogs, mind, mindLogs, work, workLogs, relation, relationLogs, finance, financeLogs, districts, trips] =
     await Promise.all([
     prisma.bodyProfile.findUnique({ where: { userId } }),
     prisma.bodyDiet.findUnique({ where: { userId } }),
@@ -40,6 +40,10 @@ export async function buildContextMarkdown(userId: string) {
     prisma.bodyInfoLog.findMany({
       where: { userId },
       orderBy: { createdAt: "asc" },
+    }),
+    prisma.medicalVisitLog.findMany({
+      where: { userId },
+      orderBy: { visitedOn: "asc" },
     }),
     prisma.aiAdviceLog.findMany({
       where: { userId },
@@ -162,6 +166,17 @@ export async function buildContextMarkdown(userId: string) {
     chunks.push(line("饮食", log.diet));
     chunks.push(line("睡眠", log.sleep));
     chunks.push(line("体检", log.exam));
+  }
+
+  chunks.push("\n## 看病记录\n");
+  if (medicalVisits.length === 0) {
+    chunks.push("\n还没有记录。\n");
+  }
+  for (const visit of medicalVisits) {
+    chunks.push(`\n### ${day(visit.visitedOn)}\n\n`);
+    chunks.push(line("医院", visit.hospital));
+    chunks.push(line("科室", visit.department));
+    chunks.push(line("记录", visit.note));
   }
 
   chunks.push("\n## 心态\n");

@@ -54,6 +54,7 @@ model User {
   bodySleepHabit       BodySleepHabit?
   bodyExam             BodyExam?
   bodyInfoLogs         BodyInfoLog[]
+  medicalVisitLogs     MedicalVisitLog[]
   aiAdviceLogs         AiAdviceLog[]
   mindProfile          MindProfile?
   mindInfoLogs         MindInfoLog[]
@@ -164,6 +165,19 @@ model BodyInfoLog {
   createdAt DateTime @default(now())
 
   @@index([userId, writtenOn])
+}
+
+model MedicalVisitLog {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  visitedOn  DateTime
+  hospital   String?
+  department String?
+  note       String?  @db.Text
+  createdAt  DateTime @default(now())
+
+  @@index([userId, visitedOn])
 }
 
 model AiAdviceLog {

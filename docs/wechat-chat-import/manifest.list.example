@@ -1,0 +1,5 @@
+# 每行一个 fragments JSON 路径（# 开头为注释）
+# 按时间范围组织批次；合并时会按消息时间排序，而非文件顺序
+#
+# E:\temp\wx-run\batch-20260707-01\fragments\batch-20260707-01.json
+# E:\temp\wx-run\batch-20260722-02\fragments\batch-20260722-02.json

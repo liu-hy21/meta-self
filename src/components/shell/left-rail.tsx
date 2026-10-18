@@ -21,6 +21,7 @@ const financeProfileHref = "/finance/profile";
 const videoHref = "/library/video";
 const articleHref = "/library/article";
 const drawHref = "/library/draw";
+const chatHref = "/library/chat";
 
 export function LeftRail({ items }: { items: BodyNavItem[] }) {
   const pathname = usePathname();
@@ -112,6 +113,7 @@ export function LeftRail({ items }: { items: BodyNavItem[] }) {
           onToggle={() => setOpen((current) => ({ ...current, library: !current.library }))}
         >
           <RailLink href={videoHref} label="视频" active={pathname.startsWith(videoHref)} nested />
+          <RailLink href={chatHref} label="聊天记录" active={pathname.startsWith(chatHref)} nested />
           <div className="ml-1">
             <Group
               label="图文"

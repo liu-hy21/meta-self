@@ -145,7 +145,7 @@ function glucoseTrack(value: number): RangeTrack | undefined {
 }
 
 export async function loadBoardSnapshot(userId: string): Promise<BoardSnapshot> {
-  const [profile, diet, sleepHabit, exam, logs, mind, mindLogs, work, workLogs, relation, relationLogs, finance, financeLogs, trips, districts] =
+  const [profile, diet, sleepHabit, exam, logs, medicalVisits, mind, mindLogs, work, workLogs, relation, relationLogs, finance, financeLogs, trips, districts] =
     await Promise.all([
     prisma.bodyProfile.findUnique({ where: { userId } }),
     prisma.bodyDiet.findUnique({ where: { userId } }),
@@ -154,6 +154,11 @@ export async function loadBoardSnapshot(userId: string): Promise<BoardSnapshot> 
     prisma.bodyInfoLog.findMany({
       where: { userId },
       orderBy: { writtenOn: "desc" },
+      take: 3,
+    }),
+    prisma.medicalVisitLog.findMany({
+      where: { userId },
+      orderBy: { visitedOn: "desc" },
       take: 3,
     }),
     prisma.mindProfile.findUnique({ where: { userId } }),
@@ -354,6 +359,13 @@ export async function loadBoardSnapshot(userId: string): Promise<BoardSnapshot> 
       const parts = [log.body, log.diet, log.sleep, log.exam].filter(Boolean);
       if (parts.length === 0) return [];
       return [{ id: log.id, at: log.writtenOn, sourceLabel, text: parts.join("；") }];
+    }),
+    ...medicalVisits.flatMap((visit) => {
+      const sourceLabel = `看病记录 · ${stamp(visit.visitedOn)}`;
+      const head = [visit.hospital, visit.department].filter(Boolean).join(" · ");
+      const text = [head, visit.note].filter(Boolean).join("：");
+      if (!text) return [];
+      return [{ id: visit.id, at: visit.visitedOn, sourceLabel, text }];
     }),
     ...mindLogs.flatMap((log) => {
       const sourceLabel = `心态日志 · ${stamp(log.writtenOn)}`;
