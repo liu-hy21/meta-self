@@ -4,6 +4,8 @@ import { usePathname } from "next/navigation";
 
 import { articleTopicLabel } from "@/lib/library-article";
 import { drawToolLabel } from "@/lib/library-draw";
+import { englishSectionLabel } from "@/lib/library-english";
+import { familySectionLabel } from "@/lib/library-family";
 
 const titles: Record<string, string> = {
   "/": "看板",
@@ -16,11 +18,14 @@ const titles: Record<string, string> = {
   "/work/log": "工作日志",
   "/relation/profile": "关系",
   "/relation/log": "关系日志",
-  "/finance/profile": "玩转",
+  "/finance/profile": "财商",
   "/finance/log": "财商日志",
+  "/play": "玩商",
+  "/english": "英语",
   "/library/video": "视频",
-  "/library/article": "图文",
-  "/library/draw": "绘制",
+  "/library/draw": "数据资产",
+  "/library/corp": "数据资产",
+  "/library/family": "家庭",
   "/library/chat": "聊天记录",
 };
 
@@ -28,12 +33,25 @@ function titleFor(pathname: string) {
   if (pathname.startsWith("/library/article/")) {
     const topic = pathname.split("/")[3];
     const label = topic ? articleTopicLabel(topic) : null;
-    return label ? `图文 · ${label}` : "图文";
+    return label ?? "仓库";
   }
   if (pathname.startsWith("/library/draw/")) {
     const tool = pathname.split("/")[3];
     const label = tool ? drawToolLabel(tool) : null;
-    return label ? `绘制 · ${label}` : "绘制";
+    return label ? `数据资产 · 绘制 · ${label}` : "数据资产 · 绘制";
+  }
+  if (pathname.startsWith("/library/corp")) {
+    return "数据资产 · corp";
+  }
+  if (pathname.startsWith("/english/")) {
+    const section = pathname.split("/")[2];
+    const label = section ? englishSectionLabel(section) : null;
+    return label ? `玩转 · 英语 · ${label}` : "玩转 · 英语";
+  }
+  if (pathname.startsWith("/library/family/")) {
+    const section = pathname.split("/")[3];
+    const label = section ? familySectionLabel(section) : null;
+    return label ? `家庭 · ${label}` : "家庭";
   }
   return titles[pathname] ?? "身体";
 }

@@ -7,7 +7,7 @@ import { backClass, fieldClass, labelClass, submitClass } from "@/components/ui/
 
 type TripWithEntries = Trip & { entries: TripEntry[] };
 
-const base = "/finance/profile?tab=play";
+const base = "/play";
 
 export function TravelBlock({
   trips,
@@ -28,11 +28,11 @@ export function TravelBlock({
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="text-base font-semibold">旅游</h2>
         {editing ? (
-          <Link href={trip && add ? `${base}&edit=travel&trip=${trip.id}` : base} className={backClass}>
+          <Link href={trip && add ? `${base}?edit=travel&trip=${trip.id}` : base} className={backClass}>
             返回
           </Link>
         ) : (
-          <Link href={`${base}&edit=travel`} className={submitClass()}>
+          <Link href={`${base}?edit=travel`} className={submitClass()}>
             记一次
           </Link>
         )}
@@ -67,7 +67,7 @@ function TripList({ trips }: { trips: TripWithEntries[] }) {
       {trips.map((trip) => {
         const money = totals(trip.entries);
         return (
-          <Link key={trip.id} href={`${base}&edit=travel&trip=${trip.id}`} className="block border-2 border-[var(--ink)] bg-[var(--panel)] px-4 py-3">
+          <Link key={trip.id} href={`${base}?edit=travel&trip=${trip.id}`} className="block border-2 border-[var(--ink)] bg-[var(--panel)] px-4 py-3">
             <p className="text-sm font-semibold">{trip.title}</p>
             <p className="mt-1 text-xs text-[var(--muted)]">
               {[trip.traveler, span(trip.entries)].filter(Boolean).join(" · ")}
@@ -92,13 +92,13 @@ function TripBoard({ trip }: { trip: TripWithEntries }) {
         {trip.note ? <p className="mt-2 whitespace-pre-wrap text-sm">{trip.note}</p> : null}
       </div>
       <div className="flex flex-wrap gap-2">
-        <Link href={`${base}&edit=travel&trip=${trip.id}&add=flight`} className={submitClass()}>
+        <Link href={`${base}?edit=travel&trip=${trip.id}&add=flight`} className={submitClass()}>
           航班
         </Link>
-        <Link href={`${base}&edit=travel&trip=${trip.id}&add=hotel`} className={submitClass()}>
+        <Link href={`${base}?edit=travel&trip=${trip.id}&add=hotel`} className={submitClass()}>
           酒店
         </Link>
-        <Link href={`${base}&edit=travel&trip=${trip.id}&add=event`} className={submitClass()}>
+        <Link href={`${base}?edit=travel&trip=${trip.id}&add=event`} className={submitClass()}>
           当天
         </Link>
       </div>

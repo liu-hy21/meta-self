@@ -1,8 +1,13 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
+import { mkdir, unlink, writeFile } from "node:fs/promises";
+import path from "node:path";
+
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
+  ChoreCadence,
   FinanceLiteracyKind,
   RelationKind,
   TechStackStatus,
@@ -12,8 +17,26 @@ import { z } from "zod";
 import { articleTopicLabel } from "@/lib/library-article";
 import { getAppUserId } from "@/lib/user";
 import { calendarDateInTimezone } from "@/lib/dates";
+import { choresPageQuery, isWeeklyChoreDone, parseChoresViewMode } from "@/lib/chores";
+import { parseKitchenUsageFrequency, type KitchenActionState } from "@/lib/kitchen";
+import { parseCleaningCadence } from "@/lib/kitchen-cleaning";
+import { parseDishDifficulty } from "@/lib/kitchen-dish";
+import {
+  computeTotalCnyMinor,
+  financeHoldingConfigs,
+  holdingsMapToJson,
+  shanghaiCalendarDate,
+  validateFinanceHoldingsForm,
+} from "@/lib/finance-holdings";
+import type { FinanceHoldingAccount } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { generateReportForUser } from "@/lib/reports/generate";
+import {
+  workCredentialDir,
+  workCredentialExt,
+  workCredentialLimit,
+  workCredentialMime,
+} from "@/lib/work-credential";
 
 function revalidateApp() {
   revalidatePath("/");
@@ -27,11 +50,14 @@ function revalidateApp() {
   revalidatePath("/relation/profile");
   revalidatePath("/relation/log");
   revalidatePath("/finance/profile");
+  revalidatePath("/play");
   revalidatePath("/finance/log");
   revalidatePath("/body/sleep");
   revalidatePath("/body/meals");
   revalidatePath("/body/vitals");
   revalidatePath("/library/article", "layout");
+  revalidatePath("/library/family/chores");
+  revalidatePath("/library/family/kitchen");
 }
 
 export async function upsertBodyProfile(formData: FormData) {
@@ -205,7 +231,51 @@ export async function upsertWorkProfile(formData: FormData) {
     update: data,
   });
   revalidateApp();
-  redirect("/work/profile");
+  redirect("/work/profile?tab=profile");
+}
+
+export async function createWorkCredential(formData: FormData) {
+  const userId = await getAppUserId();
+  const name = optionalText(formData, "name");
+  const file = formData.get("file");
+  const back = "/work/profile?tab=credentials";
+
+  if (!name || !(file instanceof File) || file.size === 0) {
+    redirect(`${back}&error=required`);
+  }
+  if (file.size > workCredentialLimit()) {
+    redirect(`${back}&error=size`);
+  }
+
+  const ext = workCredentialExt(file);
+  if (!ext) {
+    redirect(`${back}&error=type`);
+  }
+
+  const storedName = `${randomUUID()}.${ext}`;
+  const dir = workCredentialDir();
+  const fullPath = path.join(dir, storedName);
+  await mkdir(dir, { recursive: true });
+  await writeFile(fullPath, Buffer.from(await file.arrayBuffer()));
+
+  try {
+    await prisma.workCredential.create({
+      data: {
+        userId,
+        name: name.slice(0, 120),
+        storedName,
+        originalName: file.name.slice(0, 255),
+        mime: workCredentialMime(ext),
+        sizeBytes: file.size,
+      },
+    });
+  } catch (error) {
+    await unlink(fullPath).catch(() => undefined);
+    throw error;
+  }
+
+  revalidateApp();
+  redirect(back);
 }
 
 export async function createWorkInfoLog(formData: FormData) {
@@ -270,6 +340,65 @@ export async function upsertFinanceProfile(formData: FormData) {
   redirect("/finance/profile");
 }
 
+export async function upsertFinanceHoldings(formData: FormData) {
+  const userId = await getAppUserId();
+  const validated = validateFinanceHoldingsForm(formData);
+  if (!validated.ok) {
+    const code =
+      validated.missingLabels.length > 0
+        ? "required"
+        : "invalid";
+    redirect(`/finance/profile?edit=1&assetsError=${code}`);
+  }
+
+  const newAmounts = validated.amounts;
+  const existing = await prisma.financeHolding.findMany({ where: { userId } });
+  const byAccount = new Map(existing.map((row) => [row.account, row]));
+
+  const totalCnyMinor = computeTotalCnyMinor(newAmounts);
+
+  for (const config of financeHoldingConfigs) {
+    const newMinor = newAmounts.get(config.account)!;
+    const prev = byAccount.get(config.account);
+    const previousMinor = prev?.amountMinor ?? null;
+    if (prev && previousMinor === newMinor) continue;
+
+    await prisma.financeHolding.upsert({
+      where: { userId_account: { userId, account: config.account } },
+      create: { userId, account: config.account, amountMinor: newMinor },
+      update: { amountMinor: newMinor },
+    });
+
+    await prisma.financeHoldingLog.create({
+      data: {
+        userId,
+        account: config.account,
+        previousAmountMinor: prev ? previousMinor : null,
+        newAmountMinor: newMinor,
+        totalCnyMinor,
+      },
+    });
+  }
+
+  const asOfDate = shanghaiCalendarDate();
+  await prisma.financeAssetSnapshot.upsert({
+    where: { userId_asOfDate: { userId, asOfDate } },
+    create: {
+      userId,
+      asOfDate,
+      totalCnyMinor,
+      holdingsJson: holdingsMapToJson(newAmounts),
+    },
+    update: {
+      totalCnyMinor,
+      holdingsJson: holdingsMapToJson(newAmounts),
+    },
+  });
+
+  revalidateApp();
+  redirect("/finance/profile");
+}
+
 export async function createPlayDistrict(formData: FormData) {
   const userId = await getAppUserId();
   const district = optionalText(formData, "district");
@@ -277,7 +406,7 @@ export async function createPlayDistrict(formData: FormData) {
   if (!district || !project) return;
   await prisma.playDistrict.create({ data: { userId, district, project } });
   revalidateApp();
-  redirect("/finance/profile?tab=play");
+  redirect("/play");
 }
 
 export async function createLibraryArticleEntry(formData: FormData) {
@@ -322,7 +451,7 @@ export async function createTrip(formData: FormData) {
     },
   });
   revalidateApp();
-  redirect(`/finance/profile?tab=play&edit=travel&trip=${trip.id}`);
+  redirect(`/play?edit=travel&trip=${trip.id}`);
 }
 
 export async function createTripEntry(formData: FormData) {
@@ -333,7 +462,7 @@ export async function createTripEntry(formData: FormData) {
   const trip = await prisma.trip.findFirst({ where: { id: tripId, userId } });
   if (!trip) return;
 
-  const back = `/finance/profile?tab=play&edit=travel&trip=${tripId}`;
+  const back = `/play?edit=travel&trip=${tripId}`;
   if (kind === "flight") {
     const day = optionalText(formData, "date");
     const origin = optionalText(formData, "origin");
@@ -449,6 +578,351 @@ export async function createMedicalVisitLog(formData: FormData) {
   });
   revalidateApp();
   redirect("/body/log");
+}
+
+const choreCadences = new Set<string>(["DAILY", "WEEKLY", "MONTHLY"]);
+
+export async function createChoreLog(formData: FormData) {
+  const userId = await getAppUserId();
+  const cadenceRaw = String(formData.get("cadence") ?? "").trim();
+  if (!choreCadences.has(cadenceRaw)) return;
+  const cadence = cadenceRaw as ChoreCadence;
+  const text = optionalText(formData, "text");
+  if (!text) return;
+
+  await prisma.choreLog.create({
+    data: {
+      userId,
+      cadence,
+      text,
+    },
+  });
+  revalidateApp();
+  const mode = parseChoresViewMode(optionalText(formData, "mode") ?? undefined);
+  redirect(`/library/family/chores${choresPageQuery({ mode })}`);
+}
+
+export async function updateChoreLog(formData: FormData) {
+  const userId = await getAppUserId();
+  const id = optionalText(formData, "id");
+  if (!id) return;
+  const cadenceRaw = String(formData.get("cadence") ?? "").trim();
+  if (!choreCadences.has(cadenceRaw)) return;
+  const cadence = cadenceRaw as ChoreCadence;
+  const text = optionalText(formData, "text");
+  if (!text) return;
+
+  const existing = await prisma.choreLog.findFirst({ where: { id, userId } });
+  if (!existing) return;
+
+  await prisma.choreLog.update({
+    where: { id },
+    data: { cadence, text },
+  });
+  revalidateApp();
+  const mode = parseChoresViewMode(optionalText(formData, "mode") ?? undefined);
+  redirect(`/library/family/chores${choresPageQuery({ mode })}`);
+}
+
+function finishKitchenAction(): KitchenActionState {
+  revalidateApp();
+  return { ok: true };
+}
+
+export async function createKitchenSeasoning(
+  _previousState: KitchenActionState,
+  formData: FormData,
+): Promise<KitchenActionState> {
+  const userId = await getAppUserId();
+  const name = optionalText(formData, "name");
+  if (!name) return null;
+  const usageFrequency = parseKitchenUsageFrequency(String(formData.get("usageFrequency") ?? "").trim());
+  if (!usageFrequency) return null;
+  const description = optionalText(formData, "description") || null;
+
+  await prisma.kitchenSeasoning.create({
+    data: { userId, name, usageFrequency, description },
+  });
+  return finishKitchenAction();
+}
+
+export async function updateKitchenSeasoning(
+  _previousState: KitchenActionState,
+  formData: FormData,
+): Promise<KitchenActionState> {
+  const userId = await getAppUserId();
+  const id = optionalText(formData, "id");
+  if (!id) return null;
+  const name = optionalText(formData, "name");
+  if (!name) return null;
+  const usageFrequency = parseKitchenUsageFrequency(String(formData.get("usageFrequency") ?? "").trim());
+  if (!usageFrequency) return null;
+  const description = optionalText(formData, "description") || null;
+
+  const existing = await prisma.kitchenSeasoning.findFirst({ where: { id, userId } });
+  if (!existing) return null;
+
+  await prisma.kitchenSeasoning.update({
+    where: { id },
+    data: { name, usageFrequency, description },
+  });
+  return finishKitchenAction();
+}
+
+export async function deleteKitchenSeasoning(
+  _previousState: KitchenActionState,
+  formData: FormData,
+): Promise<KitchenActionState> {
+  const userId = await getAppUserId();
+  const id = optionalText(formData, "id");
+  if (!id) return null;
+
+  const existing = await prisma.kitchenSeasoning.findFirst({ where: { id, userId } });
+  if (!existing) return null;
+
+  await prisma.kitchenSeasoning.delete({ where: { id } });
+  return finishKitchenAction();
+}
+
+export async function createKitchenVegetable(
+  _previousState: KitchenActionState,
+  formData: FormData,
+): Promise<KitchenActionState> {
+  const userId = await getAppUserId();
+  const name = optionalText(formData, "name");
+  if (!name) return null;
+  const usageFrequency = parseKitchenUsageFrequency(String(formData.get("usageFrequency") ?? "").trim());
+  if (!usageFrequency) return null;
+  const description = optionalText(formData, "description") || null;
+
+  await prisma.kitchenVegetable.create({
+    data: { userId, name, usageFrequency, description },
+  });
+  return finishKitchenAction();
+}
+
+export async function updateKitchenVegetable(
+  _previousState: KitchenActionState,
+  formData: FormData,
+): Promise<KitchenActionState> {
+  const userId = await getAppUserId();
+  const id = optionalText(formData, "id");
+  if (!id) return null;
+  const name = optionalText(formData, "name");
+  if (!name) return null;
+  const usageFrequency = parseKitchenUsageFrequency(String(formData.get("usageFrequency") ?? "").trim());
+  if (!usageFrequency) return null;
+  const description = optionalText(formData, "description") || null;
+
+  const existing = await prisma.kitchenVegetable.findFirst({ where: { id, userId } });
+  if (!existing) return null;
+
+  await prisma.kitchenVegetable.update({
+    where: { id },
+    data: { name, usageFrequency, description },
+  });
+  return finishKitchenAction();
+}
+
+export async function deleteKitchenVegetable(
+  _previousState: KitchenActionState,
+  formData: FormData,
+): Promise<KitchenActionState> {
+  const userId = await getAppUserId();
+  const id = optionalText(formData, "id");
+  if (!id) return null;
+
+  const existing = await prisma.kitchenVegetable.findFirst({ where: { id, userId } });
+  if (!existing) return null;
+
+  await prisma.kitchenVegetable.delete({ where: { id } });
+  return finishKitchenAction();
+}
+
+export async function createKitchenMeat(
+  _previousState: KitchenActionState,
+  formData: FormData,
+): Promise<KitchenActionState> {
+  const userId = await getAppUserId();
+  const name = optionalText(formData, "name");
+  if (!name) return null;
+  const usageFrequency = parseKitchenUsageFrequency(String(formData.get("usageFrequency") ?? "").trim());
+  if (!usageFrequency) return null;
+  const description = optionalText(formData, "description") || null;
+
+  await prisma.kitchenMeat.create({
+    data: { userId, name, usageFrequency, description },
+  });
+  return finishKitchenAction();
+}
+
+export async function updateKitchenMeat(
+  _previousState: KitchenActionState,
+  formData: FormData,
+): Promise<KitchenActionState> {
+  const userId = await getAppUserId();
+  const id = optionalText(formData, "id");
+  if (!id) return null;
+  const name = optionalText(formData, "name");
+  if (!name) return null;
+  const usageFrequency = parseKitchenUsageFrequency(String(formData.get("usageFrequency") ?? "").trim());
+  if (!usageFrequency) return null;
+  const description = optionalText(formData, "description") || null;
+
+  const existing = await prisma.kitchenMeat.findFirst({ where: { id, userId } });
+  if (!existing) return null;
+
+  await prisma.kitchenMeat.update({
+    where: { id },
+    data: { name, usageFrequency, description },
+  });
+  return finishKitchenAction();
+}
+
+export async function deleteKitchenMeat(
+  _previousState: KitchenActionState,
+  formData: FormData,
+): Promise<KitchenActionState> {
+  const userId = await getAppUserId();
+  const id = optionalText(formData, "id");
+  if (!id) return null;
+
+  const existing = await prisma.kitchenMeat.findFirst({ where: { id, userId } });
+  if (!existing) return null;
+
+  await prisma.kitchenMeat.delete({ where: { id } });
+  return finishKitchenAction();
+}
+
+export async function createKitchenDish(
+  _previousState: KitchenActionState,
+  formData: FormData,
+): Promise<KitchenActionState> {
+  const userId = await getAppUserId();
+  const name = optionalText(formData, "name");
+  if (!name) return null;
+  const difficulty = parseDishDifficulty(String(formData.get("difficulty") ?? "").trim());
+  if (!difficulty) return null;
+  const ingredients = optionalText(formData, "ingredients") || null;
+  const cookingProcess = optionalText(formData, "cookingProcess") || null;
+
+  await prisma.kitchenDish.create({
+    data: { userId, name, difficulty, ingredients, cookingProcess },
+  });
+  return finishKitchenAction();
+}
+
+export async function updateKitchenDish(
+  _previousState: KitchenActionState,
+  formData: FormData,
+): Promise<KitchenActionState> {
+  const userId = await getAppUserId();
+  const id = optionalText(formData, "id");
+  if (!id) return null;
+  const name = optionalText(formData, "name");
+  if (!name) return null;
+  const difficulty = parseDishDifficulty(String(formData.get("difficulty") ?? "").trim());
+  if (!difficulty) return null;
+  const ingredients = optionalText(formData, "ingredients") || null;
+  const cookingProcess = optionalText(formData, "cookingProcess") || null;
+
+  const existing = await prisma.kitchenDish.findFirst({ where: { id, userId } });
+  if (!existing) return null;
+
+  await prisma.kitchenDish.update({
+    where: { id },
+    data: { name, difficulty, ingredients, cookingProcess },
+  });
+  return finishKitchenAction();
+}
+
+export async function deleteKitchenDish(
+  _previousState: KitchenActionState,
+  formData: FormData,
+): Promise<KitchenActionState> {
+  const userId = await getAppUserId();
+  const id = optionalText(formData, "id");
+  if (!id) return null;
+
+  const existing = await prisma.kitchenDish.findFirst({ where: { id, userId } });
+  if (!existing) return null;
+
+  await prisma.kitchenDish.delete({ where: { id } });
+  return finishKitchenAction();
+}
+
+export async function createKitchenCleaning(
+  _previousState: KitchenActionState,
+  formData: FormData,
+): Promise<KitchenActionState> {
+  const userId = await getAppUserId();
+  const name = optionalText(formData, "name");
+  if (!name) return null;
+  const cadence = parseCleaningCadence(String(formData.get("cadence") ?? "").trim());
+  if (!cadence) return null;
+  const description = optionalText(formData, "description") || null;
+
+  await prisma.kitchenCleaning.create({
+    data: { userId, name, cadence, description },
+  });
+  return finishKitchenAction();
+}
+
+export async function updateKitchenCleaning(
+  _previousState: KitchenActionState,
+  formData: FormData,
+): Promise<KitchenActionState> {
+  const userId = await getAppUserId();
+  const id = optionalText(formData, "id");
+  if (!id) return null;
+  const name = optionalText(formData, "name");
+  if (!name) return null;
+  const cadence = parseCleaningCadence(String(formData.get("cadence") ?? "").trim());
+  if (!cadence) return null;
+  const description = optionalText(formData, "description") || null;
+
+  const existing = await prisma.kitchenCleaning.findFirst({ where: { id, userId } });
+  if (!existing) return null;
+
+  await prisma.kitchenCleaning.update({
+    where: { id },
+    data: { name, cadence, description },
+  });
+  return finishKitchenAction();
+}
+
+export async function deleteKitchenCleaning(
+  _previousState: KitchenActionState,
+  formData: FormData,
+): Promise<KitchenActionState> {
+  const userId = await getAppUserId();
+  const id = optionalText(formData, "id");
+  if (!id) return null;
+
+  const existing = await prisma.kitchenCleaning.findFirst({ where: { id, userId } });
+  if (!existing) return null;
+
+  await prisma.kitchenCleaning.delete({ where: { id } });
+  return finishKitchenAction();
+}
+
+export async function toggleChoreWeeklyDone(formData: FormData) {
+  const userId = await getAppUserId();
+  const id = optionalText(formData, "id");
+  if (!id) return;
+  const mode = parseChoresViewMode(optionalText(formData, "mode") ?? undefined);
+
+  const log = await prisma.choreLog.findFirst({
+    where: { id, userId, cadence: "WEEKLY" },
+  });
+  if (!log) return;
+
+  await prisma.choreLog.update({
+    where: { id },
+    data: { completedAt: isWeeklyChoreDone(log.completedAt) ? null : new Date() },
+  });
+  revalidateApp();
+  redirect(`/library/family/chores${choresPageQuery({ mode })}`);
 }
 
 export async function createSleepLog(formData: FormData) {

@@ -2,24 +2,72 @@ import Link from "next/link";
 
 import { upsertWorkProfile } from "@/app/actions/data";
 import { SaveButton } from "@/components/body/save-button";
+import { WorkCredentialsPanel } from "@/components/work/work-credentials-panel";
 import { backClass, fieldClass, labelClass, pageWrap, submitClass } from "@/components/ui/form-shell";
 import { prisma } from "@/lib/db";
 import { getAppUser } from "@/lib/user";
 
+type WorkTab = "profile" | "credentials";
+
 export default async function WorkProfilePage({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string }>;
+  searchParams: Promise<{ edit?: string; tab?: string; error?: string }>;
 }) {
   const user = await getAppUser();
-  const [{ edit }, profile] = await Promise.all([
+  const [{ edit, tab: tabRaw, error }, profile, credentials] = await Promise.all([
     searchParams,
     prisma.workProfile.findUnique({ where: { userId: user.id } }),
+    prisma.workCredential.findMany({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+    }),
   ]);
+
+  const tab: WorkTab = tabRaw === "credentials" ? "credentials" : "profile";
 
   return (
     <div className={pageWrap}>
-      <Block title="公司" editing={edit === "company"} editHref="/work/profile?edit=company">
+      <div className="flex gap-2">
+        <WorkTabLink href="/work/profile?tab=profile" label="档案" active={tab === "profile"} />
+        <WorkTabLink href="/work/profile?tab=credentials" label="证件" active={tab === "credentials"} />
+      </div>
+
+      {tab === "credentials" ? (
+        <WorkCredentialsPanel credentials={credentials} editing={edit === "1"} error={error} />
+      ) : (
+        <WorkProfileTab profile={profile} edit={edit} />
+      )}
+    </div>
+  );
+}
+
+function WorkTabLink({ href, label, active }: { href: string; label: string; active: boolean }) {
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className={`inline-flex h-8 items-center justify-center border-2 border-[var(--ink)] px-4 text-sm leading-none ${
+        active ? "bg-[var(--gold)]" : "bg-[var(--panel)]"
+      }`}
+    >
+      {label}
+    </Link>
+  );
+}
+
+function WorkProfileTab({
+  profile,
+  edit,
+}: {
+  profile: Awaited<ReturnType<typeof prisma.workProfile.findUnique>>;
+  edit?: string;
+}) {
+  const base = "/work/profile?tab=profile";
+
+  return (
+    <>
+      <Block title="公司" editing={edit === "company"} editHref={`${base}&edit=company`}>
         {edit === "company" ? (
           <form action={upsertWorkProfile} className="grid gap-4 sm:grid-cols-2">
             <Hidden name="proficient" value={profile?.proficient} />
@@ -44,7 +92,7 @@ export default async function WorkProfilePage({
         )}
       </Block>
 
-      <Block title="技术" editing={edit === "stack"} editHref="/work/profile?edit=stack">
+      <Block title="技术" editing={edit === "stack"} editHref={`${base}&edit=stack`}>
         {edit === "stack" ? (
           <form action={upsertWorkProfile} className="grid gap-4">
             <Hidden name="companyName" value={profile?.companyName} />
@@ -68,7 +116,7 @@ export default async function WorkProfilePage({
         )}
       </Block>
 
-      <Block title="学习经历" editing={edit === "study"} editHref="/work/profile?edit=study">
+      <Block title="学习经历" editing={edit === "study"} editHref={`${base}&edit=study`}>
         {edit === "study" ? (
           <form action={upsertWorkProfile} className="grid gap-4">
             <Hidden name="companyName" value={profile?.companyName} />
@@ -85,7 +133,7 @@ export default async function WorkProfilePage({
           <Cards wide items={[["过往", profile?.studyHistory || "未填"]]} />
         )}
       </Block>
-    </div>
+    </>
   );
 }
 
@@ -109,7 +157,7 @@ function Block({
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="text-base font-semibold">{title}</h2>
         {editing ? (
-          <Link href="/work/profile" className={backClass}>
+          <Link href="/work/profile?tab=profile" className={backClass}>
             返回
           </Link>
         ) : (

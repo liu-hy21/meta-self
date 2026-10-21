@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { createLibraryArticleEntry } from "@/app/actions/data";
 import { SaveButton } from "@/components/body/save-button";
-import { backClass, fieldClass, labelClass, submitClass } from "@/components/ui/form-shell";
+import { backClass, fieldClass, labelClass, pageWrap, submitClass } from "@/components/ui/form-shell";
 import { prisma } from "@/lib/db";
 import { articleBodyLineCount, articleTopicLabel } from "@/lib/library-article";
 import { getAppUser } from "@/lib/user";
@@ -29,7 +29,7 @@ export default async function ArticleTopicPage({
   const base = `/library/article/${topic}`;
 
   return (
-    <div className="p-4">
+    <div className={pageWrap}>
       <section className="pixel-box flex min-h-[min(70vh,40rem)] flex-col">
         <div className="flex items-center justify-between gap-3 border-b-2 border-[var(--ink)] px-4 py-3">
           <p className="text-sm font-semibold">{label}</p>

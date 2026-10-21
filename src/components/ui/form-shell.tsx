@@ -46,4 +46,11 @@ export function submitClass() {
 
 export const backClass = `${buttonSize} border-2 border-[var(--ink)] bg-[var(--panel)] text-[var(--ink)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--gold)]`;
 
-export const pageWrap = "mx-auto max-w-3xl space-y-4 px-6 py-5";
+/** 主内容区：与厨房/家务 `.q-page` 一致的宽度与区块间距（见 globals.css） */
+export const pageWrap = "q-page";
+
+/** @deprecated 与 {@link pageWrap} 相同，保留别名避免大范围改名 */
+export const pageWrapDashboard = pageWrap;
+
+export const pageWrapKitchen = "q-kitchen q-page";
+export const pageWrapHome = "q-home q-page";

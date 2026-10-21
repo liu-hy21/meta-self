@@ -92,7 +92,9 @@ export async function buildReportContext(
 
   const latest = snapshots[0];
   const latestNetWorthCents = latest
-    ? latest.cashCents + latest.investmentCents - latest.liabilityCents
+    ? latest.totalCnyMinor > 0
+      ? latest.totalCnyMinor
+      : latest.cashCents + latest.investmentCents - latest.liabilityCents
     : null;
 
   return {

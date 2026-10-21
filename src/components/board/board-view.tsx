@@ -6,7 +6,7 @@ import type { BoardSnapshot } from "@/lib/board/snapshot";
 
 export function BoardView({ snapshot }: { snapshot: BoardSnapshot }) {
   return (
-    <div className="mx-auto max-w-5xl px-6 py-5">
+    <div className="q-page">
       <Suspense fallback={<BoardAdviceColumns sections={placeholderSections()} loading />}>
         <BoardAdviceBoard snapshot={snapshot} />
       </Suspense>
@@ -32,13 +32,13 @@ function BoardAdviceColumns({ sections, loading }: { sections: BoardAdviceSectio
   const right = sections.slice(boardAdviceSectionSplitIndex);
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
-      <div className="flex flex-col gap-4">
+    <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
+      <div className="flex flex-col gap-6">
         {left.map((section) => (
           <AdviceCard key={section.id} section={section} loading={loading} />
         ))}
       </div>
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-6">
         {right.map((section) => (
           <AdviceCard key={section.id} section={section} loading={loading} />
         ))}

@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { fieldClass, labelClass, submitClass } from "@/components/ui/form-shell";
+import { fieldClass, labelClass, pageWrap, submitClass } from "@/components/ui/form-shell";
 import { prisma } from "@/lib/db";
 import { getAppUser } from "@/lib/user";
 
@@ -25,7 +25,7 @@ export default async function VideoLibraryPage({
   const message = error ? errors[error] : null;
 
   return (
-    <div className="p-4">
+    <div className={pageWrap}>
       <div className="grid items-stretch gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
         <section className="flex w-full max-w-[20rem] flex-col gap-3">
           <div className="pixel-box p-3">

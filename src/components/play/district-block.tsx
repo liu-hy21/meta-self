@@ -5,7 +5,7 @@ import { createPlayDistrict } from "@/app/actions/data";
 import { SaveButton } from "@/components/body/save-button";
 import { backClass, fieldClass, labelClass, submitClass } from "@/components/ui/form-shell";
 
-const base = "/finance/profile?tab=play";
+const base = "/play";
 
 export function DistrictBlock({ districts, edit }: { districts: PlayDistrict[]; edit?: string }) {
   const editing = edit === "districts";
@@ -19,7 +19,7 @@ export function DistrictBlock({ districts, edit }: { districts: PlayDistrict[]; 
             返回
           </Link>
         ) : (
-          <Link href={`${base}&edit=districts`} className={submitClass()}>
+          <Link href={`${base}?edit=districts`} className={submitClass()}>
             记一次
           </Link>
         )}

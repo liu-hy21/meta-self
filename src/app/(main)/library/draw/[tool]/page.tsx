@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 
+import { pageWrap } from "@/components/ui/form-shell";
 import { drawToolLabel } from "@/lib/library-draw";
 
 export default async function DrawToolPage({ params }: { params: Promise<{ tool: string }> }) {
@@ -8,7 +9,7 @@ export default async function DrawToolPage({ params }: { params: Promise<{ tool:
   if (!label) notFound();
 
   return (
-    <div className="p-4">
+    <div className={pageWrap}>
       <section className="pixel-box flex min-h-[min(70vh,40rem)] flex-col">
         <div className="border-b-2 border-[var(--ink)] px-4 py-3">
           <p className="text-sm font-semibold">{label}</p>

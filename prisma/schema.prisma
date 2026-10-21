@@ -25,6 +25,18 @@ enum RelationKind {
   OTHER
 }
 
+enum FinanceHoldingAccount {
+  SCHWAB_QQQ
+  SCHWAB_VOO
+  SCHWAB_OTHER
+  SCHWAB_CASH
+  HK_CARD
+  BANK_CARD
+  ALIPAY
+  EASTMONEY
+  BN
+}
+
 enum FinanceLiteracyKind {
   LEARNING
   DECISION
@@ -38,6 +50,30 @@ enum ReportType {
 enum ReportStatus {
   DRAFT
   FINALIZED
+}
+
+enum ChoreCadence {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum SeasoningUsageFrequency {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum DishDifficulty {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum KitchenCleaningCadence {
+  DAILY
+  WEEKLY
+  MONTHLY
 }
 
 model User {
@@ -60,10 +96,19 @@ model User {
   mindInfoLogs         MindInfoLog[]
   workProfile          WorkProfile?
   workInfoLogs         WorkInfoLog[]
+  workCredentials      WorkCredential[]
   relationProfile      RelationProfile?
   relationInfoLogs     RelationInfoLog[]
   financeProfile       FinanceProfile?
   financeInfoLogs      FinanceInfoLog[]
+  financeHoldings      FinanceHolding[]
+  financeHoldingLogs   FinanceHoldingLog[]
+  choreLogs            ChoreLog[]
+  kitchenSeasonings    KitchenSeasoning[]
+  kitchenVegetables    KitchenVegetable[]
+  kitchenMeats         KitchenMeat[]
+  kitchenDishes        KitchenDish[]
+  kitchenCleanings     KitchenCleaning[]
   playDistricts        PlayDistrict[]
   trips                Trip[]
   libraryVideos        LibraryVideo[]
@@ -180,6 +225,85 @@ model MedicalVisitLog {
   @@index([userId, visitedOn])
 }
 
+model ChoreLog {
+  id        String       @id @default(cuid())
+  userId    String
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cadence     ChoreCadence
+  text        String       @db.Text
+  doneOn      DateTime     @default(now())
+  completedAt DateTime?
+  createdAt   DateTime     @default(now())
+
+  @@index([userId, cadence, doneOn])
+}
+
+model KitchenSeasoning {
+  id             String                  @id @default(cuid())
+  userId         String
+  user           User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name           String
+  usageFrequency SeasoningUsageFrequency @default(MEDIUM)
+  description    String?                 @db.Text
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  @@index([userId])
+}
+
+model KitchenVegetable {
+  id             String                  @id @default(cuid())
+  userId         String
+  user           User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name           String
+  usageFrequency SeasoningUsageFrequency @default(MEDIUM)
+  description    String?                 @db.Text
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  @@index([userId])
+}
+
+model KitchenMeat {
+  id             String                  @id @default(cuid())
+  userId         String
+  user           User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name           String
+  usageFrequency SeasoningUsageFrequency @default(MEDIUM)
+  description    String?                 @db.Text
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  @@index([userId])
+}
+
+model KitchenDish {
+  id             String         @id @default(cuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name           String
+  difficulty     DishDifficulty
+  ingredients    String?        @db.Text
+  cookingProcess String?        @db.Text
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([userId, difficulty])
+}
+
+model KitchenCleaning {
+  id          String                 @id @default(cuid())
+  userId      String
+  user        User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name        String
+  cadence     KitchenCleaningCadence
+  description String?                @db.Text
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  @@index([userId, cadence])
+}
+
 model AiAdviceLog {
   id        String   @id @default(cuid())
   userId    String
@@ -241,6 +365,20 @@ model WorkInfoLog {
   @@index([userId, writtenOn])
 }
 
+model WorkCredential {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name         String
+  storedName   String
+  originalName String
+  mime         String
+  sizeBytes    Int
+  createdAt    DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
 model RelationProfile {
   id        String   @id @default(cuid())
   userId    String   @unique
@@ -286,6 +424,31 @@ model FinanceInfoLog {
   createdAt DateTime @default(now())
 
   @@index([userId, writtenOn])
+}
+
+model FinanceHolding {
+  id          String                @id @default(cuid())
+  userId      String
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account     FinanceHoldingAccount
+  amountMinor Int                   @default(0)
+  updatedAt   DateTime              @updatedAt
+
+  @@unique([userId, account])
+  @@index([userId])
+}
+
+model FinanceHoldingLog {
+  id                  String                @id @default(cuid())
+  userId              String
+  user                User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account             FinanceHoldingAccount
+  previousAmountMinor Int?
+  newAmountMinor      Int
+  totalCnyMinor       Int
+  createdAt           DateTime              @default(now())
+
+  @@index([userId, createdAt])
 }
 
 model PlayDistrict {
@@ -503,13 +666,16 @@ model FinanceAssetSnapshot {
   id              String   @id @default(cuid())
   userId          String
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  asOfDate        DateTime
+  asOfDate        DateTime @db.Date
+  totalCnyMinor   Int      @default(0)
+  holdingsJson    Json?
   cashCents       Int      @default(0)
   investmentCents Int      @default(0)
   liabilityCents  Int      @default(0)
   note            String?  @db.Text
   createdAt       DateTime @default(now())
 
+  @@unique([userId, asOfDate])
   @@index([userId, asOfDate])
 }
 
