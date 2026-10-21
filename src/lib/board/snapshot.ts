@@ -145,7 +145,7 @@ function glucoseTrack(value: number): RangeTrack | undefined {
 }
 
 export async function loadBoardSnapshot(userId: string): Promise<BoardSnapshot> {
-  const [profile, diet, sleepHabit, exam, logs, medicalVisits, mind, mindLogs, work, workLogs, relation, relationLogs, finance, financeLogs, trips, districts] =
+  const [profile, diet, sleepHabit, exam, logs, medicalVisits, mind, mindLogs, work, workLogs, relation, relationLogs, finance, trips, districts] =
     await Promise.all([
     prisma.bodyProfile.findUnique({ where: { userId } }),
     prisma.bodyDiet.findUnique({ where: { userId } }),
@@ -180,11 +180,6 @@ export async function loadBoardSnapshot(userId: string): Promise<BoardSnapshot> 
       take: 3,
     }),
     prisma.financeProfile.findUnique({ where: { userId } }),
-    prisma.financeInfoLog.findMany({
-      where: { userId },
-      orderBy: { writtenOn: "desc" },
-      take: 3,
-    }),
     prisma.trip.findMany({
       where: { userId },
       orderBy: { updatedAt: "desc" },
@@ -382,12 +377,6 @@ export async function loadBoardSnapshot(userId: string): Promise<BoardSnapshot> 
     ...relationLogs.flatMap((log) => {
       const sourceLabel = `关系日志 · ${stamp(log.writtenOn)}`;
       const parts = [log.person, log.happened, log.feeling != null ? `感受 ${log.feeling}` : null].filter(Boolean);
-      if (parts.length === 0) return [];
-      return [{ id: log.id, at: log.writtenOn, sourceLabel, text: parts.join("；") }];
-    }),
-    ...financeLogs.flatMap((log) => {
-      const sourceLabel = `财商日志 · ${stamp(log.writtenOn)}`;
-      const parts = [log.learned, log.decision, log.outcome].filter(Boolean);
       if (parts.length === 0) return [];
       return [{ id: log.id, at: log.writtenOn, sourceLabel, text: parts.join("；") }];
     }),

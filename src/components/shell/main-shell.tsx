@@ -19,11 +19,7 @@ export function MainShell({ board, children }: { board: BodyBoard; children: Rea
               <TopBar />
               <div className="min-h-0 flex-1 overflow-y-auto">{children}</div>
             </div>
-            <Suspense
-              fallback={
-                <aside className="flex w-[280px] shrink-0 flex-col border-l-4 border-[var(--ink)] bg-[var(--panel)]" />
-              }
-            >
+            <Suspense fallback={null}>
               <EvidenceRail />
             </Suspense>
           </div>

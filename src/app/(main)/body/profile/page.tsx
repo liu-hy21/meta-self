@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { upsertBodyDiet, upsertBodyExam, upsertBodyProfile, upsertBodySleepHabit } from "@/app/actions/data";
 import { SaveButton } from "@/components/body/save-button";
+import { BodyLogRail } from "@/components/logs/body-log-rail";
+import { RailPortal } from "@/components/shell/rail-portal";
 import { backClass, fieldClass, labelClass, pageWrap, submitClass } from "@/components/ui/form-shell";
 import { prisma } from "@/lib/db";
 import { getAppUser } from "@/lib/user";
@@ -61,22 +63,43 @@ const examGroups = [
 export default async function ProfilePage({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string }>;
+  searchParams: Promise<{ edit?: string; write?: string; medicalWrite?: string }>;
 }) {
   const user = await getAppUser();
-  const [{ edit }, profile, diet, sleepHabit, exam] = await Promise.all([
+  const [{ edit, write, medicalWrite }, profile, diet, sleepHabit, exam, logs, medicalLogs] = await Promise.all([
     searchParams,
     prisma.bodyProfile.findUnique({ where: { userId: user.id } }),
     prisma.bodyDiet.findUnique({ where: { userId: user.id } }),
     prisma.bodySleepHabit.findUnique({ where: { userId: user.id } }),
     prisma.bodyExam.findUnique({ where: { userId: user.id } }),
+    prisma.bodyInfoLog.findMany({
+      where: { userId: user.id },
+      orderBy: [{ writtenOn: "desc" }, { createdAt: "desc" }],
+      take: 30,
+    }),
+    prisma.medicalVisitLog.findMany({
+      where: { userId: user.id },
+      orderBy: [{ visitedOn: "desc" }, { createdAt: "desc" }],
+      take: 30,
+    }),
   ]);
 
   const birthValue = profile?.birthDate ? profile.birthDate.toISOString().slice(0, 10) : "";
   const examDate = exam?.examDate ? exam.examDate.toISOString().slice(0, 10) : "";
 
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Shanghai" });
+
   return (
     <div className={pageWrap}>
+      <RailPortal>
+        <BodyLogRail
+          logs={logs}
+          medicalLogs={medicalLogs}
+          writing={write === "1" || logs.length === 0}
+          medicalWriting={medicalWrite === "1" || medicalLogs.length === 0}
+          today={today}
+        />
+      </RailPortal>
       <Block title="基本信息" editing={edit === "basic"} editHref="/body/profile?edit=basic">
         {edit === "basic" ? (
           <form action={upsertBodyProfile} className="grid gap-4 sm:grid-cols-2">

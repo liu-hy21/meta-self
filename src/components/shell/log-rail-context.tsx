@@ -18,6 +18,8 @@ type LogRailOverride =
 type LogRailContextValue = {
   defaultEvidence: BodyEvidence;
   override: LogRailOverride;
+  railSlot: HTMLDivElement | null;
+  setRailSlot: (node: HTMLDivElement | null) => void;
   selectedKitchenDishId: string | null;
   setKitchenDishDetail: (dish: KitchenDishLogDetail | null) => void;
   clearOverride: () => void;
@@ -33,6 +35,7 @@ export function LogRailProvider({
   children: React.ReactNode;
 }) {
   const [override, setOverride] = useState<LogRailOverride>(null);
+  const [railSlot, setRailSlot] = useState<HTMLDivElement | null>(null);
 
   const setKitchenDishDetail = useCallback((dish: KitchenDishLogDetail | null) => {
     if (!dish) {
@@ -48,11 +51,13 @@ export function LogRailProvider({
     () => ({
       defaultEvidence,
       override,
+      railSlot,
+      setRailSlot,
       selectedKitchenDishId: override?.kind === "kitchen-dish" ? override.dish.id : null,
       setKitchenDishDetail,
       clearOverride,
     }),
-    [defaultEvidence, override, setKitchenDishDetail, clearOverride],
+    [defaultEvidence, override, railSlot, setKitchenDishDetail, clearOverride],
   );
 
   return <LogRailContext.Provider value={value}>{children}</LogRailContext.Provider>;

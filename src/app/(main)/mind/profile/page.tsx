@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { upsertMindProfile } from "@/app/actions/data";
 import { SaveButton } from "@/components/body/save-button";
+import { MindLogRail } from "@/components/logs/mind-log-rail";
+import { RailPortal } from "@/components/shell/rail-portal";
 import { backClass, fieldClass, labelClass, pageWrap, submitClass } from "@/components/ui/form-shell";
 import { prisma } from "@/lib/db";
 import { getAppUser } from "@/lib/user";
@@ -9,16 +11,24 @@ import { getAppUser } from "@/lib/user";
 export default async function MindProfilePage({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string }>;
+  searchParams: Promise<{ edit?: string; write?: string }>;
 }) {
   const user = await getAppUser();
-  const [{ edit }, profile] = await Promise.all([
+  const [{ edit, write }, profile, logs] = await Promise.all([
     searchParams,
     prisma.mindProfile.findUnique({ where: { userId: user.id } }),
+    prisma.mindInfoLog.findMany({
+      where: { userId: user.id },
+      orderBy: [{ writtenOn: "desc" }, { createdAt: "desc" }],
+      take: 30,
+    }),
   ]);
 
   return (
     <div className={pageWrap}>
+      <RailPortal>
+        <MindLogRail logs={logs} writing={write === "1" || logs.length === 0} />
+      </RailPortal>
       <Block title="情绪" editing={edit === "emotion"} editHref="/mind/profile?edit=emotion">
         {edit === "emotion" ? (
           <form action={upsertMindProfile} className="grid gap-4">

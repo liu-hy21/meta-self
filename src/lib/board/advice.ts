@@ -108,7 +108,7 @@ function buildCategoryPayload(snapshot: BoardSnapshot) {
     },
     assets: {
       finance: snapshot.finance,
-      logs: logsMatching(snapshot, /^财商日志 ·/),
+      logs: [],
     },
   };
 }

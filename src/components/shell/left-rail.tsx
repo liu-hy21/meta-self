@@ -10,15 +10,9 @@ import { englishSections } from "@/lib/library-english";
 import { familySections } from "@/lib/library-family";
 import type { BodyNavItem } from "@/lib/queries/body";
 
-const bodyLogHref = "/body/log";
-const adviceLogHref = "/body/advice-log";
-const mindLogHref = "/mind/log";
 const mindProfileHref = "/mind/profile";
-const workLogHref = "/work/log";
 const workProfileHref = "/work/profile";
-const relationLogHref = "/relation/log";
 const relationProfileHref = "/relation/profile";
-const financeLogHref = "/finance/log";
 const financeProfileHref = "/finance/profile";
 const playHref = "/play";
 const videoHref = "/library/video";
@@ -72,15 +66,6 @@ function IconPlay() {
   );
 }
 
-function IconCollect() {
-  return (
-    <svg className={iconClass} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="square">
-      <path d="M3 2h10v12H3z" />
-      <path d="M5 5h6M5 8h6M5 11h4" />
-    </svg>
-  );
-}
-
 function IconMyStore() {
   return (
     <svg className={iconClass} viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="square">
@@ -107,13 +92,6 @@ export function LeftRail({ items }: { items: BodyNavItem[] }) {
   const board = byKey.get("today");
   const profile = byKey.get("profile");
   const logAttention = items.some((item) => item.key !== "today" && item.key !== "profile" && item.status === "attention");
-  const logOpen =
-    pathname.startsWith(bodyLogHref) ||
-    pathname.startsWith(adviceLogHref) ||
-    pathname.startsWith(mindLogHref) ||
-    pathname.startsWith(workLogHref) ||
-    pathname.startsWith(relationLogHref) ||
-    pathname.startsWith(financeLogHref);
   const englishOpen = pathname.startsWith(englishHref);
   const playOpen = pathname.startsWith(financeProfileHref) || pathname.startsWith(playHref) || englishOpen;
   const profileOpen =
@@ -126,7 +104,6 @@ export function LeftRail({ items }: { items: BodyNavItem[] }) {
   const drawOpen = pathname.startsWith(drawHref);
   const familyOpen = pathname.startsWith(familyHref);
   const [open, setOpen] = useState({
-    log: logOpen,
     profile: profileOpen,
     library: libraryOpen,
     dataAssets: dataAssetsOpen,
@@ -138,7 +115,6 @@ export function LeftRail({ items }: { items: BodyNavItem[] }) {
 
   useEffect(() => {
     setOpen({
-      log: logOpen,
       profile: profileOpen,
       library: libraryOpen,
       dataAssets: dataAssetsOpen,
@@ -147,7 +123,7 @@ export function LeftRail({ items }: { items: BodyNavItem[] }) {
       family: familyOpen,
       play: playOpen,
     });
-  }, [logOpen, profileOpen, libraryOpen, dataAssetsOpen, drawOpen, englishOpen, familyOpen, playOpen]);
+  }, [profileOpen, libraryOpen, dataAssetsOpen, drawOpen, englishOpen, familyOpen, playOpen]);
 
   return (
     <aside className="flex w-[248px] shrink-0 flex-col border-r-4 border-[var(--ink)] bg-[var(--panel)]">
@@ -212,34 +188,19 @@ export function LeftRail({ items }: { items: BodyNavItem[] }) {
           </Group>
         </Group>
 
-        <Group
-          label="采集"
-          icon={<IconCollect />}
-          open={open.log}
-          attention={logAttention}
-          onToggle={() => setOpen((current) => ({ ...current, log: !current.log }))}
-        >
-          <RailLink href={bodyLogHref} label="身体日志" active={pathname.startsWith(bodyLogHref)} attention={logAttention} nested />
-          <RailLink href={mindLogHref} label="心态日志" active={pathname.startsWith(mindLogHref)} nested />
-          <RailLink href={workLogHref} label="工作日志" active={pathname.startsWith(workLogHref)} nested />
-          <RailLink href={relationLogHref} label="关系日志" active={pathname.startsWith(relationLogHref)} nested />
-          <RailLink href={financeLogHref} label="财商日志" active={pathname.startsWith(financeLogHref)} nested />
-          <RailLink href={adviceLogHref} label="AI建议日志" active={pathname.startsWith(adviceLogHref)} nested />
-        </Group>
-
         {profile ? (
           <Group
             label="我的仓库"
             icon={<IconMyStore />}
             open={open.profile}
-            attention={profile.status === "attention"}
+            attention={profile.status === "attention" || logAttention}
             onToggle={() => setOpen((current) => ({ ...current, profile: !current.profile }))}
           >
             <RailLink
               href={profile.href}
               label="身体"
               active={pathname.startsWith(profile.href)}
-              attention={profile.status === "attention"}
+              attention={profile.status === "attention" || logAttention}
               nested
             />
             <RailLink href={mindProfileHref} label="心态" active={pathname.startsWith(mindProfileHref)} nested />

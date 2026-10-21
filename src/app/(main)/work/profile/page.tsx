@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { upsertWorkProfile } from "@/app/actions/data";
 import { SaveButton } from "@/components/body/save-button";
+import { WorkLogRail } from "@/components/logs/work-log-rail";
+import { RailPortal } from "@/components/shell/rail-portal";
 import { WorkCredentialsPanel } from "@/components/work/work-credentials-panel";
 import { backClass, fieldClass, labelClass, pageWrap, submitClass } from "@/components/ui/form-shell";
 import { prisma } from "@/lib/db";
@@ -12,15 +14,20 @@ type WorkTab = "profile" | "credentials";
 export default async function WorkProfilePage({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string; tab?: string; error?: string }>;
+  searchParams: Promise<{ edit?: string; tab?: string; error?: string; write?: string }>;
 }) {
   const user = await getAppUser();
-  const [{ edit, tab: tabRaw, error }, profile, credentials] = await Promise.all([
+  const [{ edit, tab: tabRaw, error, write }, profile, credentials, logs] = await Promise.all([
     searchParams,
     prisma.workProfile.findUnique({ where: { userId: user.id } }),
     prisma.workCredential.findMany({
       where: { userId: user.id },
       orderBy: { createdAt: "desc" },
+    }),
+    prisma.workInfoLog.findMany({
+      where: { userId: user.id },
+      orderBy: [{ writtenOn: "desc" }, { createdAt: "desc" }],
+      take: 30,
     }),
   ]);
 
@@ -28,6 +35,9 @@ export default async function WorkProfilePage({
 
   return (
     <div className={pageWrap}>
+      <RailPortal>
+        <WorkLogRail logs={logs} writing={write === "1" || logs.length === 0} />
+      </RailPortal>
       <div className="flex gap-2">
         <WorkTabLink href="/work/profile?tab=profile" label="档案" active={tab === "profile"} />
         <WorkTabLink href="/work/profile?tab=credentials" label="证件" active={tab === "credentials"} />

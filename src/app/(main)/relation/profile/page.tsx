@@ -2,6 +2,8 @@ import Link from "next/link";
 
 import { upsertRelationProfile } from "@/app/actions/data";
 import { SaveButton } from "@/components/body/save-button";
+import { RelationLogRail } from "@/components/logs/relation-log-rail";
+import { RailPortal } from "@/components/shell/rail-portal";
 import { backClass, fieldClass, labelClass, pageWrap, submitClass } from "@/components/ui/form-shell";
 import { prisma } from "@/lib/db";
 import { getAppUser } from "@/lib/user";
@@ -16,17 +18,25 @@ const fields = [
 export default async function RelationProfilePage({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string }>;
+  searchParams: Promise<{ edit?: string; write?: string }>;
 }) {
   const user = await getAppUser();
-  const [{ edit }, profile] = await Promise.all([
+  const [{ edit, write }, profile, logs] = await Promise.all([
     searchParams,
     prisma.relationProfile.findUnique({ where: { userId: user.id } }),
+    prisma.relationInfoLog.findMany({
+      where: { userId: user.id },
+      orderBy: [{ writtenOn: "desc" }, { createdAt: "desc" }],
+      take: 30,
+    }),
   ]);
   const editing = edit === "1";
 
   return (
     <div className={pageWrap}>
+      <RailPortal>
+        <RelationLogRail logs={logs} writing={write === "1" || logs.length === 0} />
+      </RailPortal>
       <section className="pixel-box p-4">
         <div className="mb-4 flex items-center justify-between gap-3">
           <h2 className="text-base font-semibold">人</h2>

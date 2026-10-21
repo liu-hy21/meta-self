@@ -42,7 +42,6 @@ function revalidateApp() {
   revalidatePath("/");
   revalidatePath("/body/profile");
   revalidatePath("/body/log");
-  revalidatePath("/body/advice-log");
   revalidatePath("/mind/profile");
   revalidatePath("/mind/log");
   revalidatePath("/work/profile");
@@ -51,7 +50,6 @@ function revalidateApp() {
   revalidatePath("/relation/log");
   revalidatePath("/finance/profile");
   revalidatePath("/play");
-  revalidatePath("/finance/log");
   revalidatePath("/body/sleep");
   revalidatePath("/body/meals");
   revalidatePath("/body/vitals");
@@ -210,7 +208,7 @@ export async function createMindInfoLog(formData: FormData) {
     data: { userId, writtenOn: new Date(), emotion, psyche },
   });
   revalidateApp();
-  redirect("/mind/log");
+  redirect("/mind/profile");
 }
 
 export async function upsertWorkProfile(formData: FormData) {
@@ -289,7 +287,7 @@ export async function createWorkInfoLog(formData: FormData) {
     data: { userId, writtenOn: new Date(), occasion, outcome, nextChange },
   });
   revalidateApp();
-  redirect("/work/log");
+  redirect("/work/profile");
 }
 
 export async function upsertRelationProfile(formData: FormData) {
@@ -321,7 +319,7 @@ export async function createRelationInfoLog(formData: FormData) {
     data: { userId, writtenOn: new Date(), person, happened, feeling },
   });
   revalidateApp();
-  redirect("/relation/log");
+  redirect("/relation/profile");
 }
 
 export async function upsertFinanceProfile(formData: FormData) {
@@ -528,20 +526,6 @@ export async function createTripEntry(formData: FormData) {
   redirect(back);
 }
 
-export async function createFinanceInfoLog(formData: FormData) {
-  const userId = await getAppUserId();
-  const learned = optionalText(formData, "learned");
-  const decision = optionalText(formData, "decision");
-  const outcome = optionalText(formData, "outcome");
-  if (!learned && !decision && !outcome) return;
-
-  await prisma.financeInfoLog.create({
-    data: { userId, writtenOn: new Date(), learned, decision, outcome },
-  });
-  revalidateApp();
-  redirect("/finance/log");
-}
-
 export async function createBodyInfoLog(formData: FormData) {
   const userId = await getAppUserId();
   const body = optionalText(formData, "body");
@@ -554,7 +538,7 @@ export async function createBodyInfoLog(formData: FormData) {
     data: { userId, writtenOn: new Date(), body, diet, sleep, exam },
   });
   revalidateApp();
-  redirect("/body/log");
+  redirect("/body/profile");
 }
 
 export async function createMedicalVisitLog(formData: FormData) {
@@ -577,7 +561,7 @@ export async function createMedicalVisitLog(formData: FormData) {
     },
   });
   revalidateApp();
-  redirect("/body/log");
+  redirect("/body/profile");
 }
 
 const choreCadences = new Set<string>(["DAILY", "WEEKLY", "MONTHLY"]);

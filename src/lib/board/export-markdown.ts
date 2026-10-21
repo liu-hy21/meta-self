@@ -31,7 +31,7 @@ function line(label: string, value: string | number | null | undefined) {
 }
 
 export async function buildContextMarkdown(userId: string) {
-  const [profile, diet, sleepHabit, exam, logs, medicalVisits, adviceLogs, mind, mindLogs, work, workLogs, relation, relationLogs, finance, financeLogs, districts, trips] =
+  const [profile, diet, sleepHabit, exam, logs, medicalVisits, mind, mindLogs, work, workLogs, relation, relationLogs, finance, districts, trips] =
     await Promise.all([
     prisma.bodyProfile.findUnique({ where: { userId } }),
     prisma.bodyDiet.findUnique({ where: { userId } }),
@@ -44,10 +44,6 @@ export async function buildContextMarkdown(userId: string) {
     prisma.medicalVisitLog.findMany({
       where: { userId },
       orderBy: { visitedOn: "asc" },
-    }),
-    prisma.aiAdviceLog.findMany({
-      where: { userId },
-      orderBy: { createdAt: "asc" },
     }),
     prisma.mindProfile.findUnique({ where: { userId } }),
     prisma.mindInfoLog.findMany({
@@ -65,10 +61,6 @@ export async function buildContextMarkdown(userId: string) {
       orderBy: { createdAt: "asc" },
     }),
     prisma.financeProfile.findUnique({ where: { userId } }),
-    prisma.financeInfoLog.findMany({
-      where: { userId },
-      orderBy: { createdAt: "asc" },
-    }),
     prisma.playDistrict.findMany({
       where: { userId },
       orderBy: { createdAt: "asc" },
@@ -330,28 +322,6 @@ export async function buildContextMarkdown(userId: string) {
   for (const item of districts) {
     chunks.push(`- 商圈：${item.district}\n`);
     chunks.push(`  项目：${item.project}\n`);
-  }
-
-  chunks.push("\n## 财商日志\n");
-  if (financeLogs.length === 0) {
-    chunks.push("\n还没有日志。\n");
-  }
-  for (const log of financeLogs) {
-    chunks.push(`\n### ${when(log.createdAt)}\n\n`);
-    chunks.push(`创建时间：${when(log.createdAt)}\n\n`);
-    chunks.push(line("学了什么", log.learned));
-    chunks.push(line("决定", log.decision));
-    chunks.push(line("结果", log.outcome));
-  }
-
-  chunks.push("\n## AI建议日志\n");
-  if (adviceLogs.length === 0) {
-    chunks.push("\n还没有导入的建议。\n");
-  }
-  for (const log of adviceLogs) {
-    chunks.push(`\n### ${when(log.createdAt)}\n\n`);
-    chunks.push(`创建时间：${when(log.createdAt)}\n\n`);
-    chunks.push(`${log.content}\n`);
   }
 
   return chunks.join("");
