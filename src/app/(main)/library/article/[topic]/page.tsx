@@ -5,7 +5,7 @@ import { createLibraryArticleEntry } from "@/app/actions/data";
 import { SaveButton } from "@/components/body/save-button";
 import { backClass, fieldClass, labelClass, pageWrap, submitClass } from "@/components/ui/form-shell";
 import { prisma } from "@/lib/db";
-import { articleBodyLineCount, articleTopicLabel } from "@/lib/library-article";
+import { articleBodyLineCount, articleTopicLabel, articleTopics } from "@/lib/library-article";
 import { getAppUser } from "@/lib/user";
 
 export default async function ArticleTopicPage({
@@ -30,6 +30,24 @@ export default async function ArticleTopicPage({
 
   return (
     <div className={pageWrap}>
+      <div className="flex flex-wrap gap-2">
+        {articleTopics.map((item) => {
+          const href = `/library/article/${item.slug}`;
+          const active = item.slug === topic;
+          return (
+            <Link
+              key={item.slug}
+              href={href}
+              aria-current={active ? "page" : undefined}
+              className={`inline-flex h-8 items-center justify-center border-2 border-[var(--ink)] px-4 text-sm leading-none ${
+                active ? "bg-[var(--gold)]" : "bg-[var(--panel)]"
+              }`}
+            >
+              {item.label}
+            </Link>
+          );
+        })}
+      </div>
       <section className="pixel-box flex min-h-[min(70vh,40rem)] flex-col">
         <div className="flex items-center justify-between gap-3 border-b-2 border-[var(--ink)] px-4 py-3">
           <p className="text-sm font-semibold">{label}</p>

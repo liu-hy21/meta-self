@@ -445,6 +445,220 @@ textarea:focus-visible {
   }
 }
 
+/* 身体：临床监护台（深色、细线、等宽数字），与 Q 版家庭、像素页都不同 */
+.vital {
+  --v-bg: #0d1412;
+  --v-panel: #121c19;
+  --v-panel-2: #16231f;
+  --v-line: rgba(150, 214, 190, 0.12);
+  --v-line-strong: rgba(150, 214, 190, 0.28);
+  --v-text: #e4efe9;
+  --v-dim: #87a197;
+  --v-faint: #5b7068;
+  --v-signal: #6fe3b4;
+  --v-signal-soft: rgba(111, 227, 180, 0.14);
+  --v-amber: #f2b66d;
+  --v-coral: #ff8b7b;
+  --v-mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Mono", Consolas, monospace;
+
+  min-height: 100%;
+  color: var(--v-text);
+  color-scheme: dark;
+  font-family: "Inter", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.55;
+  background-color: var(--v-bg);
+  background-image:
+    radial-gradient(1200px 420px at 85% -10%, rgba(111, 227, 180, 0.09), transparent 60%),
+    linear-gradient(var(--v-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--v-line) 1px, transparent 1px);
+  background-size: auto, 32px 32px, 32px 32px;
+  background-position: 0 0, -1px -1px, -1px -1px;
+}
+
+.vital-panel {
+  position: relative;
+  background: linear-gradient(180deg, var(--v-panel-2), var(--v-panel));
+  border: 1px solid var(--v-line-strong);
+  border-radius: 6px;
+  padding: 1.25rem;
+}
+.vital-panel::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 1.25rem;
+  width: 2rem;
+  height: 2px;
+  background: var(--v-signal);
+}
+.vital-panel[data-tone="amber"]::before { background: var(--v-amber); }
+.vital-panel[data-tone="coral"]::before { background: var(--v-coral); }
+
+.vital-kicker {
+  font-family: var(--v-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--v-faint);
+}
+.vital-title {
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--v-text);
+}
+.vital-dim { color: var(--v-dim); }
+.vital-faint { color: var(--v-faint); }
+.vital-mono {
+  font-family: var(--v-mono);
+  font-variant-numeric: tabular-nums;
+}
+.vital-num {
+  font-family: var(--v-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--v-text);
+}
+.vital-signal { color: var(--v-signal); }
+.vital-amber { color: var(--v-amber); }
+.vital-coral { color: var(--v-coral); }
+
+.vital-rule {
+  border: 0;
+  border-top: 1px dashed var(--v-line-strong);
+}
+
+.vital-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-height: 2rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--v-line-strong);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--v-text);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+  transition: border-color 150ms ease, color 150ms ease, background-color 150ms ease;
+}
+.vital-btn:hover {
+  border-color: var(--v-signal);
+  color: var(--v-signal);
+}
+.vital-btn--solid {
+  border-color: var(--v-signal);
+  background: var(--v-signal);
+  color: #07110d;
+  font-weight: 600;
+}
+.vital-btn--solid:hover {
+  background: #8ff0c8;
+  color: #07110d;
+}
+.vital-btn:disabled { opacity: 0.55; }
+
+.vital-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1.125rem;
+  border: 1px solid var(--v-line);
+  border-radius: 6px;
+  background: rgba(13, 20, 18, 0.6);
+  text-align: left;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+button.vital-tile:hover {
+  border-color: var(--v-signal);
+  background: var(--v-signal-soft);
+}
+
+.vital-row {
+  display: grid;
+  align-items: baseline;
+  gap: 1rem;
+  padding: 0.625rem 0;
+  border-bottom: 1px solid var(--v-line);
+}
+.vital-row:last-child { border-bottom: 0; }
+
+.vital-scroll {
+  max-height: 18rem;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--v-line-strong) transparent;
+}
+
+.vital input,
+.vital textarea,
+.vital select {
+  display: block;
+  width: 100%;
+  margin-top: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--v-line-strong);
+  border-radius: 4px;
+  background: rgba(7, 12, 10, 0.7);
+  color: var(--v-text);
+  font-size: 0.875rem;
+  box-shadow: none;
+}
+.vital input:focus,
+.vital textarea:focus,
+.vital select:focus {
+  outline: none;
+  border-color: var(--v-signal);
+  box-shadow: 0 0 0 3px var(--v-signal-soft);
+}
+.vital input[type="file"] {
+  padding: 0.375rem;
+  color: var(--v-dim);
+}
+.vital input[type="file"]::file-selector-button {
+  margin-right: 0.75rem;
+  padding: 0.375rem 0.75rem;
+  border: 1px solid var(--v-line-strong);
+  border-radius: 4px;
+  background: var(--v-panel-2);
+  color: var(--v-text);
+  cursor: pointer;
+}
+.vital label,
+.vital .vital-label {
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  color: var(--v-dim);
+}
+
+.vital-modal-backdrop {
+  background: rgba(3, 7, 6, 0.72);
+  backdrop-filter: blur(4px);
+}
+.vital-modal {
+  background: var(--v-panel);
+  border: 1px solid var(--v-line-strong);
+  border-radius: 8px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(111, 227, 180, 0.06);
+}
+
+@keyframes vital-trace {
+  from { stroke-dashoffset: 600; }
+  to { stroke-dashoffset: 0; }
+}
+.vital-trace {
+  stroke-dasharray: 600;
+  animation: vital-trace 2.4s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vital-trace { animation: none; stroke-dasharray: none; }
+  .vital-btn, .vital-tile { transition: none; }
+}
+
 .sr-only {
   position: absolute;
   width: 1px;

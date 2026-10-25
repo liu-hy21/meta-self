@@ -89,6 +89,8 @@ model User {
   bodyDiet             BodyDiet?
   bodySleepHabit       BodySleepHabit?
   bodyExam             BodyExam?
+  bodyMeasureLogs      BodyMeasureLog[]
+  bodyExamLogs         BodyExamLog[]
   bodyInfoLogs         BodyInfoLog[]
   medicalVisitLogs     MedicalVisitLog[]
   aiAdviceLogs         AiAdviceLog[]
@@ -109,6 +111,7 @@ model User {
   kitchenMeats         KitchenMeat[]
   kitchenDishes        KitchenDish[]
   kitchenCleanings     KitchenCleaning[]
+  familySupportContacts FamilySupportContact[]
   playDistricts        PlayDistrict[]
   trips                Trip[]
   libraryVideos        LibraryVideo[]
@@ -196,6 +199,45 @@ model BodyExam {
   diastolic        String?
   restingHeartRate String?
   updatedAt        DateTime  @updatedAt
+}
+
+model BodyMeasureLog {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logDate    DateTime @db.Date
+  weightKg   Float?
+  bodyFatPct Float?
+  chestCm    Float?
+  waistCm    Float?
+  thighCm    Float?
+  createdAt  DateTime @default(now())
+
+  @@index([userId, logDate])
+}
+
+model BodyExamLog {
+  id        String             @id @default(cuid())
+  userId    String
+  user      User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logDate   DateTime           @db.Date
+  createdAt DateTime           @default(now())
+  images    BodyExamLogImage[]
+
+  @@index([userId, logDate])
+}
+
+model BodyExamLogImage {
+  id           String      @id @default(cuid())
+  examLogId    String
+  examLog      BodyExamLog @relation(fields: [examLogId], references: [id], onDelete: Cascade)
+  storedName   String
+  originalName String
+  mime         String
+  sizeBytes    Int
+  createdAt    DateTime    @default(now())
+
+  @@index([examLogId])
 }
 
 model BodyInfoLog {
@@ -289,6 +331,17 @@ model KitchenDish {
   updatedAt      DateTime       @updatedAt
 
   @@index([userId, difficulty])
+}
+
+model FamilySupportContact {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device    String
+  contact   String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 model KitchenCleaning {
@@ -552,6 +605,9 @@ model SleepLog {
   id            String     @id @default(cuid())
   userId        String
   user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logDate       DateTime?  @db.Date
+  sleepStart    String?
+  wakeTime      String?
   occurredAt    DateTime
   durationHours Float
   note          String?    @db.Text
@@ -559,6 +615,7 @@ model SleepLog {
   createdAt     DateTime   @default(now())
 
   @@index([userId, occurredAt])
+  @@index([userId, logDate])
 }
 
 model MealLog {

@@ -13,6 +13,10 @@ const requiredDelegates = [
   "workCredential",
   "financeHolding",
   "financeHoldingLog",
+  "familySupportContact",
+  "bodyMeasureLog",
+  "bodyExamLog",
+  "bodyExamLogImage",
 ] as const;
 
 function choreLogHasCompletedAtField() {

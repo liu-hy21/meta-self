@@ -123,34 +123,24 @@ function waistTrack(gender: string | null | undefined): RangeTrack | undefined {
   return undefined;
 }
 
-function hemoglobinTrack(gender: string | null | undefined, value: number): RangeTrack | undefined {
-  if (value < 50 || value > 250) return undefined;
-  if (gender?.includes("女")) {
-    return { min: 80, max: 200, low: 115, high: 150, source: "成年女性血红蛋白常用区间 115–150 g/L" };
-  }
-  if (gender?.includes("男")) {
-    return { min: 80, max: 200, low: 130, high: 175, source: "成年男性血红蛋白常用区间 130–175 g/L" };
-  }
-  return undefined;
-}
-
-function glucoseTrack(value: number): RangeTrack | undefined {
-  if (value >= 2 && value <= 30) {
-    return { min: 2, max: 15, low: 3.9, high: 6.1, source: "空腹血糖常用区间 3.9–6.1 mmol/L" };
-  }
-  if (value >= 40 && value <= 400) {
-    return { min: 40, max: 250, low: 70, high: 110, source: "空腹血糖常用区间 70–110 mg/dL" };
-  }
-  return undefined;
-}
-
 export async function loadBoardSnapshot(userId: string): Promise<BoardSnapshot> {
-  const [profile, diet, sleepHabit, exam, logs, medicalVisits, mind, mindLogs, work, workLogs, relation, relationLogs, finance, trips, districts] =
+  const [profile, diet, latestSleep, latestMeasure, exam, logs, medicalVisits, mind, mindLogs, work, workLogs, relation, relationLogs, finance, trips, districts] =
     await Promise.all([
     prisma.bodyProfile.findUnique({ where: { userId } }),
     prisma.bodyDiet.findUnique({ where: { userId } }),
-    prisma.bodySleepHabit.findUnique({ where: { userId } }),
-    prisma.bodyExam.findUnique({ where: { userId } }),
+    prisma.sleepLog.findFirst({
+      where: { userId },
+      orderBy: [{ logDate: "desc" }, { createdAt: "desc" }],
+    }),
+    prisma.bodyMeasureLog.findFirst({
+      where: { userId },
+      orderBy: [{ logDate: "desc" }, { createdAt: "desc" }],
+    }),
+    prisma.bodyExamLog.findFirst({
+      where: { userId },
+      orderBy: [{ logDate: "desc" }, { createdAt: "desc" }],
+      include: { _count: { select: { images: true } } },
+    }),
     prisma.bodyInfoLog.findMany({
       where: { userId },
       orderBy: { writtenOn: "desc" },
@@ -196,117 +186,57 @@ export async function loadBoardSnapshot(userId: string): Promise<BoardSnapshot> 
   const metrics: BoardMetric[] = [];
   const gender = profile?.gender;
 
-  if (profile?.weightKg != null) {
+  if (latestMeasure?.weightKg != null) {
     metrics.push({
       id: "weight",
       group: "身体",
       label: "体重",
-      value: profile.weightKg,
+      value: latestMeasure.weightKg,
       unit: "kg",
-      href: "/body/profile?edit=basic",
-      recordedAt: profile.updatedAt,
-      sourceLabel: "档案 · 体重",
+      href: "/body/profile?measureWrite=1",
+      recordedAt: latestMeasure.logDate,
+      sourceLabel: "身体测量",
     });
   }
-  if (profile?.waistCm != null) {
+  if (latestMeasure?.waistCm != null) {
     metrics.push({
       id: "waist",
       group: "身体",
       label: "腰围",
-      value: profile.waistCm,
+      value: latestMeasure.waistCm,
       unit: "cm",
-      href: "/body/profile?edit=basic",
-      recordedAt: profile.updatedAt,
-      sourceLabel: "档案 · 腰围",
+      href: "/body/profile?measureWrite=1",
+      recordedAt: latestMeasure.logDate,
+      sourceLabel: "身体测量",
       track: waistTrack(gender),
     });
   }
-  if (sleepHabit?.durationHours != null) {
+  if (latestSleep) {
     metrics.push({
       id: "sleep",
       group: "睡眠",
-      label: "通常时长",
-      value: sleepHabit.durationHours,
+      label: "最近睡眠",
+      value: latestSleep.durationHours,
       unit: "小时",
-      href: "/body/profile?edit=sleep",
-      recordedAt: sleepHabit.updatedAt,
-      sourceLabel: "档案 · 睡眠",
+      href: "/body/profile?sleepWrite=1",
+      recordedAt: latestSleep.logDate ?? latestSleep.occurredAt,
+      sourceLabel: "睡眠记录",
       track: { min: 0, max: 14, low: 7, high: 9, source: "成人每晚常用 7–9 小时" },
     });
   }
 
-  const examAt = exam?.updatedAt;
-  if (exam && examAt) {
-    const systolic = leadingNumber(exam.systolic);
-    const diastolic = leadingNumber(exam.diastolic);
-    const heart = leadingNumber(exam.restingHeartRate);
-    const hemoglobin = leadingNumber(exam.hemoglobin);
-    const glucose = leadingNumber(exam.glucose);
-    if (systolic != null) {
-      metrics.push({
-        id: "systolic",
-        group: "体检",
-        label: "收缩压",
-        value: systolic,
-        unit: "mmHg",
-        href: "/body/profile?edit=exam",
-        recordedAt: examAt,
-        sourceLabel: "档案 · 收缩压",
-        track: { min: 70, max: 180, low: 90, high: 120, source: "诊室收缩压常用区间 90–120 mmHg" },
-      });
-    }
-    if (diastolic != null) {
-      metrics.push({
-        id: "diastolic",
-        group: "体检",
-        label: "舒张压",
-        value: diastolic,
-        unit: "mmHg",
-        href: "/body/profile?edit=exam",
-        recordedAt: examAt,
-        sourceLabel: "档案 · 舒张压",
-        track: { min: 40, max: 120, low: 60, high: 80, source: "诊室舒张压常用区间 60–80 mmHg" },
-      });
-    }
-    if (heart != null) {
-      metrics.push({
-        id: "heart",
-        group: "体检",
-        label: "静息心率",
-        value: heart,
-        unit: "次/分",
-        href: "/body/profile?edit=exam",
-        recordedAt: examAt,
-        sourceLabel: "档案 · 静息心率",
-        track: { min: 40, max: 140, low: 60, high: 100, source: "成人静息心率常用区间 60–100 次/分" },
-      });
-    }
-    if (hemoglobin != null) {
-      metrics.push({
-        id: "hemoglobin",
-        group: "体检",
-        label: "血红蛋白",
-        value: hemoglobin,
-        unit: "g/L",
-        href: "/body/profile?edit=exam",
-        recordedAt: examAt,
-        sourceLabel: "档案 · 血红蛋白",
-        track: hemoglobinTrack(gender, hemoglobin),
-      });
-    }
-    if (glucose != null) {
-      metrics.push({
-        id: "glucose",
-        group: "体检",
-        label: "血糖",
-        value: glucose,
-        unit: glucose <= 30 ? "mmol/L" : "mg/dL",
-        href: "/body/profile?edit=exam",
-        recordedAt: examAt,
-        sourceLabel: "档案 · 血糖",
-        track: glucoseTrack(glucose),
-      });
-    }
+  const examAt = exam?.logDate;
+  if (exam && examAt && exam._count.images > 0) {
+    metrics.push({
+      id: "exam",
+      group: "体检",
+      label: "最近体检",
+      value: exam._count.images,
+      unit: "张",
+      href: "/body/profile?examWrite=1",
+      recordedAt: examAt,
+      sourceLabel: "体检报告图片",
+    });
   }
 
   const foods: BoardFood[] = [];

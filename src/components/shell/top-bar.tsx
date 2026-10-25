@@ -31,7 +31,7 @@ function titleFor(pathname: string) {
   if (pathname.startsWith("/library/article/")) {
     const topic = pathname.split("/")[3];
     const label = topic ? articleTopicLabel(topic) : null;
-    return label ?? "仓库";
+    return label ? `知识 · ${label}` : "知识";
   }
   if (pathname.startsWith("/library/draw/")) {
     const tool = pathname.split("/")[3];

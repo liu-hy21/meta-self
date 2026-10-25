@@ -9,7 +9,6 @@ const railWidth = "w-[320px]";
 
 function railMode(pathname: string) {
   if (pathname.startsWith("/library/family/kitchen")) return "kitchen";
-  if (pathname.startsWith("/body/profile")) return "body";
   if (pathname.startsWith("/mind/profile")) return "mind";
   if (pathname.startsWith("/work/profile")) return "work";
   if (pathname.startsWith("/relation/profile")) return "relation";
@@ -18,7 +17,6 @@ function railMode(pathname: string) {
 
 const titles: Record<Exclude<ReturnType<typeof railMode>, null>, string> = {
   kitchen: "做法",
-  body: "身体日志",
   mind: "心态日志",
   work: "工作日志",
   relation: "关系日志",

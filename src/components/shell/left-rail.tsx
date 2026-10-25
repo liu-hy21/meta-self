@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
-import { articleTopics } from "@/lib/library-article";
 import { drawTools } from "@/lib/library-draw";
 import { englishSections } from "@/lib/library-english";
 import { familySections } from "@/lib/library-family";
@@ -218,12 +217,7 @@ export function LeftRail({ items }: { items: BodyNavItem[] }) {
         >
           <RailLink href={videoHref} label="视频" active={pathname.startsWith(videoHref)} nested />
           <RailLink href={chatHref} label="聊天记录" active={pathname.startsWith(chatHref)} nested />
-          {articleTopics.map((topic) => {
-            const href = `${articleHref}/${topic.slug}`;
-            return (
-              <RailLink key={topic.slug} href={href} label={topic.label} active={pathname.startsWith(href)} nested />
-            );
-          })}
+          <RailLink href={articleHref} label="知识" active={pathname.startsWith(articleHref)} nested />
           <Group
             label="数据资产"
             open={open.dataAssets}

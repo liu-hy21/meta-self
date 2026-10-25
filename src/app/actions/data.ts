@@ -16,7 +16,15 @@ import { z } from "zod";
 
 import { articleTopicLabel } from "@/lib/library-article";
 import { getAppUserId } from "@/lib/user";
+import {
+  bodyExamImageDir,
+  bodyExamImageExt,
+  bodyExamImageLimit,
+  bodyExamImageMaxFiles,
+  bodyExamImageMime,
+} from "@/lib/body-exam-image";
 import { calendarDateInTimezone } from "@/lib/dates";
+import { sleepDurationHours } from "@/lib/sleep-log";
 import { choresPageQuery, isWeeklyChoreDone, parseChoresViewMode } from "@/lib/chores";
 import { parseKitchenUsageFrequency, type KitchenActionState } from "@/lib/kitchen";
 import { parseCleaningCadence } from "@/lib/kitchen-cleaning";
@@ -56,25 +64,21 @@ function revalidateApp() {
   revalidatePath("/library/article", "layout");
   revalidatePath("/library/family/chores");
   revalidatePath("/library/family/kitchen");
+  revalidatePath("/library/family/support");
 }
 
 export async function upsertBodyProfile(formData: FormData) {
   const userId = await getAppUserId();
   const heightCm = formData.get("heightCm");
-  const weightKg = formData.get("weightKg");
   const gender = String(formData.get("gender") ?? "").trim() || null;
   const bloodType = String(formData.get("bloodType") ?? "").trim() || null;
   const birthRaw = String(formData.get("birthDate") ?? "").trim();
   const birthDate = birthRaw ? new Date(`${birthRaw}T00:00:00.000Z`) : null;
   const profileData = {
     heightCm: heightCm ? Number(heightCm) : null,
-    weightKg: weightKg ? Number(weightKg) : null,
     birthDate: birthDate && !Number.isNaN(birthDate.getTime()) ? birthDate : null,
     gender,
     bloodType,
-    chestCm: optionalNumber(formData, "chestCm"),
-    waistCm: optionalNumber(formData, "waistCm"),
-    thighCm: optionalNumber(formData, "thighCm"),
   };
 
   await prisma.bodyProfile.upsert({
@@ -83,7 +87,7 @@ export async function upsertBodyProfile(formData: FormData) {
     update: profileData,
   });
   revalidateApp();
-  redirect("/body/profile");
+  return { ok: true };
 }
 
 function optionalNumber(formData: FormData, key: string) {
@@ -117,7 +121,7 @@ export async function upsertBodyDiet(formData: FormData) {
     update: data,
   });
   revalidateApp();
-  redirect("/body/profile");
+  return { ok: true };
 }
 
 export async function upsertBodySleepHabit(formData: FormData) {
@@ -423,6 +427,41 @@ export async function createLibraryArticleEntry(formData: FormData) {
   redirect(`/library/article/${topic}`);
 }
 
+const supportHref = "/library/family/support";
+
+export async function createFamilySupportContact(formData: FormData) {
+  const userId = await getAppUserId();
+  const device = optionalText(formData, "device");
+  if (!device) return;
+  await prisma.familySupportContact.create({
+    data: {
+      userId,
+      device,
+      contact: optionalText(formData, "contact"),
+    },
+  });
+  revalidateApp();
+  redirect(supportHref);
+}
+
+export async function updateFamilySupportContact(formData: FormData) {
+  const userId = await getAppUserId();
+  const id = optionalText(formData, "id");
+  const device = optionalText(formData, "device");
+  if (!id || !device) return;
+  const existing = await prisma.familySupportContact.findFirst({ where: { id, userId } });
+  if (!existing) return;
+  await prisma.familySupportContact.update({
+    where: { id },
+    data: {
+      device,
+      contact: optionalText(formData, "contact"),
+    },
+  });
+  revalidateApp();
+  redirect(supportHref);
+}
+
 function optionalDate(formData: FormData, key: string) {
   const raw = optionalText(formData, key);
   if (!raw) return null;
@@ -526,6 +565,89 @@ export async function createTripEntry(formData: FormData) {
   redirect(back);
 }
 
+export async function createBodyMeasureLog(formData: FormData) {
+  const userId = await getAppUserId();
+  const weightKg = optionalNumber(formData, "weightKg");
+  const bodyFatPct = optionalNumber(formData, "bodyFatPct");
+  const chestCm = optionalNumber(formData, "chestCm");
+  const waistCm = optionalNumber(formData, "waistCm");
+  const thighCm = optionalNumber(formData, "thighCm");
+  if (weightKg == null && bodyFatPct == null && chestCm == null && waistCm == null && thighCm == null) {
+    return { ok: false };
+  }
+
+  await prisma.bodyMeasureLog.create({
+    data: {
+      userId,
+      logDate: calendarDateInTimezone(new Date()),
+      weightKg,
+      bodyFatPct,
+      chestCm,
+      waistCm,
+      thighCm,
+    },
+  });
+  revalidateApp();
+  return { ok: true };
+}
+
+export async function createBodyExamLog(formData: FormData) {
+  const userId = await getAppUserId();
+  const logDate = optionalDate(formData, "logDate") ?? calendarDateInTimezone(new Date());
+  const files = formData
+    .getAll("images")
+    .filter((entry): entry is File => entry instanceof File && entry.size > 0);
+  if (files.length === 0) return { ok: false };
+  if (files.length > bodyExamImageMaxFiles()) return { ok: false };
+
+  const prepared: { storedName: string; originalName: string; mime: string; sizeBytes: number; buffer: Buffer }[] =
+    [];
+  for (const file of files) {
+    if (file.size > bodyExamImageLimit()) return { ok: false };
+    const ext = bodyExamImageExt(file);
+    if (!ext) return { ok: false };
+    const storedName = `${randomUUID()}.${ext}`;
+    prepared.push({
+      storedName,
+      originalName: file.name.slice(0, 255),
+      mime: bodyExamImageMime(ext),
+      sizeBytes: file.size,
+      buffer: Buffer.from(await file.arrayBuffer()),
+    });
+  }
+
+  const dir = bodyExamImageDir();
+  await mkdir(dir, { recursive: true });
+  const written: string[] = [];
+  try {
+    for (const item of prepared) {
+      const fullPath = path.join(dir, item.storedName);
+      await writeFile(fullPath, item.buffer);
+      written.push(fullPath);
+    }
+    await prisma.bodyExamLog.create({
+      data: {
+        userId,
+        logDate,
+        images: {
+          create: prepared.map(({ storedName, originalName, mime, sizeBytes }) => ({
+            storedName,
+            originalName,
+            mime,
+            sizeBytes,
+          })),
+        },
+      },
+    });
+  } catch (error) {
+    await Promise.all(written.map((fullPath) => unlink(fullPath).catch(() => undefined)));
+    throw error;
+  }
+
+  revalidateApp();
+  return { ok: true };
+}
+
 export async function createBodyInfoLog(formData: FormData) {
   const userId = await getAppUserId();
   const body = optionalText(formData, "body");
@@ -543,13 +665,11 @@ export async function createBodyInfoLog(formData: FormData) {
 
 export async function createMedicalVisitLog(formData: FormData) {
   const userId = await getAppUserId();
-  const visitedRaw = optionalText(formData, "visitedOn");
-  const visitedOn = visitedRaw ? new Date(`${visitedRaw}T12:00:00.000+08:00`) : new Date();
+  const visitedOn = calendarDateInTimezone(new Date());
   const hospital = optionalText(formData, "hospital");
   const department = optionalText(formData, "department");
   const note = optionalText(formData, "note");
-  if (!note && !hospital && !department) return;
-  if (visitedRaw && Number.isNaN(visitedOn.getTime())) return;
+  if (!note && !hospital && !department) return { ok: false };
 
   await prisma.medicalVisitLog.create({
     data: {
@@ -561,7 +681,7 @@ export async function createMedicalVisitLog(formData: FormData) {
     },
   });
   revalidateApp();
-  redirect("/body/profile");
+  return { ok: true };
 }
 
 const choreCadences = new Set<string>(["DAILY", "WEEKLY", "MONTHLY"]);
@@ -911,19 +1031,29 @@ export async function toggleChoreWeeklyDone(formData: FormData) {
 
 export async function createSleepLog(formData: FormData) {
   const userId = await getAppUserId();
-  const durationHours = Number(formData.get("durationHours"));
-  const note = String(formData.get("note") ?? "").trim() || null;
-  if (!durationHours || durationHours <= 0) return;
+  const sleepStart = String(formData.get("sleepStart") ?? "").trim();
+  const wakeTime = String(formData.get("wakeTime") ?? "").trim();
+  if (!sleepStart || !wakeTime) return { ok: false };
+
+  const durationHours = sleepDurationHours(sleepStart, wakeTime);
+  if (durationHours <= 0) return { ok: false };
+
+  const logDate = calendarDateInTimezone(new Date());
+  const now = new Date();
 
   await prisma.sleepLog.create({
     data: {
       userId,
-      occurredAt: new Date(),
+      logDate,
+      sleepStart,
+      wakeTime,
+      occurredAt: now,
       durationHours,
-      note,
+      note: null,
     },
   });
   revalidateApp();
+  return { ok: true };
 }
 
 export async function createMealLog(formData: FormData) {

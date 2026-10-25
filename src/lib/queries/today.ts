@@ -5,6 +5,7 @@ import {
   endOfDayUtcForTimezone,
   startOfDayUtcForTimezone,
 } from "@/lib/dates";
+import { formatSleepLogLine } from "@/lib/sleep-log";
 
 export type DomainKey = "body" | "mind" | "work" | "relations" | "finance";
 
@@ -36,8 +37,12 @@ export async function getTodayStatuses(userId: string): Promise<DomainStatus[]> 
     prisma.sleepLog.findFirst({
       where: {
         userId,
-        occurredAt: { gte: dayStart, lte: dayEnd },
+        OR: [
+          { logDate: today },
+          { logDate: null, occurredAt: { gte: dayStart, lte: dayEnd } },
+        ],
       },
+      orderBy: [{ logDate: "desc" }, { occurredAt: "desc" }],
     }),
     prisma.moodLog.findFirst({
       where: { userId, calendarDate: today },
@@ -56,9 +61,7 @@ export async function getTodayStatuses(userId: string): Promise<DomainStatus[]> 
     }),
   ]);
 
-  const bodySummary = sleepToday
-    ? `睡眠 ${sleepToday.durationHours} 小时`
-    : "今日未记睡眠";
+  const bodySummary = sleepToday ? `睡眠 ${formatSleepLogLine(sleepToday)}` : "今日未记睡眠";
   const mindSummary = moodToday
     ? `情绪 ${moodToday.score}/5`
     : "今日未记情绪";

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/db";
-import { endOfDayUtcForTimezone, startOfDayUtcForTimezone } from "@/lib/dates";
+import { calendarDateInTimezone, endOfDayUtcForTimezone, startOfDayUtcForTimezone } from "@/lib/dates";
+import { formatSleepLogLine } from "@/lib/sleep-log";
 
 export type BodyItemKey = "today" | "profile" | "sleep" | "meals" | "vitals";
 
@@ -39,6 +40,7 @@ export async function getBodyBoard(userId: string): Promise<BodyBoard> {
   });
   const dayStart = startOfDayUtcForTimezone(new Date(), user.timezone);
   const dayEnd = endOfDayUtcForTimezone(new Date(), user.timezone);
+  const todayLogDate = calendarDateInTimezone(new Date(), user.timezone);
 
   const [profile, sleepCount, mealCount, vitalCount, sleepToday, mealToday, latestVital, latestSleep, latestMeal] =
     await Promise.all([
@@ -47,8 +49,14 @@ export async function getBodyBoard(userId: string): Promise<BodyBoard> {
       prisma.mealLog.count({ where: { userId } }),
       prisma.vitalMetric.count({ where: { userId } }),
       prisma.sleepLog.findFirst({
-        where: { userId, occurredAt: { gte: dayStart, lte: dayEnd } },
-        orderBy: { occurredAt: "desc" },
+        where: {
+          userId,
+          OR: [
+            { logDate: todayLogDate },
+            { logDate: null, occurredAt: { gte: dayStart, lte: dayEnd } },
+          ],
+        },
+        orderBy: [{ logDate: "desc" }, { occurredAt: "desc" }],
       }),
       prisma.mealLog.findFirst({
         where: { userId, occurredAt: { gte: dayStart, lte: dayEnd } },
@@ -68,22 +76,15 @@ export async function getBodyBoard(userId: string): Promise<BodyBoard> {
       }),
     ]);
 
-  const filled = [
-    profile?.heightCm,
-    profile?.weightKg,
-    profile?.birthDate,
-    profile?.gender,
-    profile?.bloodType,
-    profile?.chestCm,
-    profile?.waistCm,
-    profile?.thighCm,
-  ].filter((value) => value !== null && value !== undefined && value !== "").length;
+  const filled = [profile?.heightCm, profile?.birthDate, profile?.gender, profile?.bloodType].filter(
+    (value) => value !== null && value !== undefined && value !== "",
+  ).length;
 
   const recent: BodyEvidence["recent"] = [];
   if (latestSleep) {
     recent.push({
       label: "睡眠",
-      detail: `${formatWhen(latestSleep.occurredAt)} · ${latestSleep.durationHours} 小时`,
+      detail: `${formatWhen(latestSleep.occurredAt)} · ${formatSleepLogLine(latestSleep)}`,
     });
   }
   if (latestMeal) {
@@ -106,22 +107,22 @@ export async function getBodyBoard(userId: string): Promise<BodyBoard> {
         label: "今日身体",
         href: "/",
         status: sleepToday ? "ok" : "attention",
-        summary: sleepToday ? `睡眠 ${sleepToday.durationHours} 小时` : "今日未记睡眠",
+        summary: sleepToday ? `睡眠 ${formatSleepLogLine(sleepToday)}` : "今日未记睡眠",
       },
       {
         key: "profile",
         label: "档案",
         href: "/body/profile",
         status: filled >= 2 ? "ok" : "attention",
-        summary: "身体、饮食与睡眠",
+        summary: "身高、生日与饮食习惯",
       },
       {
         key: "sleep",
         label: "睡眠",
-        href: "/body/sleep",
+        href: "/body/profile?sleepWrite=1",
         status: sleepToday ? "ok" : "attention",
         summary: sleepToday
-          ? `今日 ${sleepToday.durationHours} 小时`
+          ? `今日 ${formatSleepLogLine(sleepToday)}`
           : sleepCount === 0
             ? "还没有睡眠记录"
             : `共 ${sleepCount} 条，今日未记`,

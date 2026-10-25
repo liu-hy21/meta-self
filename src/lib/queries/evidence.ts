@@ -53,7 +53,9 @@ export async function getEvidenceSnapshot(userId: string): Promise<EvidenceSnaps
   if (latestSleep) {
     recent.push({
       label: "睡眠",
-      detail: `${latestSleep.durationHours} 小时`,
+      detail: latestSleep.sleepStart && latestSleep.wakeTime
+        ? `${latestSleep.sleepStart} → ${latestSleep.wakeTime} · ${latestSleep.durationHours} 小时`
+        : `${latestSleep.durationHours} 小时`,
     });
   }
   if (latestMood) {

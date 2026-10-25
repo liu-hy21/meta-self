@@ -31,12 +31,23 @@ function line(label: string, value: string | number | null | undefined) {
 }
 
 export async function buildContextMarkdown(userId: string) {
-  const [profile, diet, sleepHabit, exam, logs, medicalVisits, mind, mindLogs, work, workLogs, relation, relationLogs, finance, districts, trips] =
+  const [profile, diet, sleepLogs, measures, exams, logs, medicalVisits, mind, mindLogs, work, workLogs, relation, relationLogs, finance, districts, trips] =
     await Promise.all([
     prisma.bodyProfile.findUnique({ where: { userId } }),
     prisma.bodyDiet.findUnique({ where: { userId } }),
-    prisma.bodySleepHabit.findUnique({ where: { userId } }),
-    prisma.bodyExam.findUnique({ where: { userId } }),
+    prisma.sleepLog.findMany({
+      where: { userId },
+      orderBy: [{ logDate: "asc" }, { createdAt: "asc" }],
+    }),
+    prisma.bodyMeasureLog.findMany({
+      where: { userId },
+      orderBy: [{ logDate: "asc" }, { createdAt: "asc" }],
+    }),
+    prisma.bodyExamLog.findMany({
+      where: { userId },
+      orderBy: [{ logDate: "asc" }, { createdAt: "asc" }],
+      include: { images: { orderBy: { createdAt: "asc" } } },
+    }),
     prisma.bodyInfoLog.findMany({
       where: { userId },
       orderBy: { createdAt: "asc" },
@@ -81,10 +92,6 @@ export async function buildContextMarkdown(userId: string) {
   } else {
     chunks.push(`更新时间：${when(profile.updatedAt)}\n\n`);
     chunks.push(line("身高", profile.heightCm != null ? `${profile.heightCm} cm` : null));
-    chunks.push(line("体重", profile.weightKg != null ? `${profile.weightKg} kg` : null));
-    chunks.push(line("胸围", profile.chestCm != null ? `${profile.chestCm} cm` : null));
-    chunks.push(line("腰围", profile.waistCm != null ? `${profile.waistCm} cm` : null));
-    chunks.push(line("腿围", profile.thighCm != null ? `${profile.thighCm} cm` : null));
     chunks.push(line("生日", profile.birthDate ? day(profile.birthDate) : null));
     chunks.push(line("性别", profile.gender));
     chunks.push(line("血型", profile.bloodType));
@@ -102,49 +109,49 @@ export async function buildContextMarkdown(userId: string) {
   }
 
   chunks.push("\n### 睡眠情况\n\n");
-  if (!sleepHabit) {
-    chunks.push("尚未填写。\n");
+  if (sleepLogs.length === 0) {
+    chunks.push("还没有记录。\n");
   } else {
-    chunks.push(`更新时间：${when(sleepHabit.updatedAt)}\n\n`);
-    chunks.push(line("通常时长", sleepHabit.durationHours != null ? `${sleepHabit.durationHours} 小时` : null));
-    chunks.push(line("通常入睡", sleepHabit.bedtime));
-    chunks.push(line("通常醒来", sleepHabit.wakeTime));
-    chunks.push(line("自感", sleepHabit.quality));
+    for (const entry of sleepLogs) {
+      const loggedOn = entry.logDate ? day(entry.logDate) : day(entry.occurredAt);
+      const range =
+        entry.sleepStart && entry.wakeTime
+          ? `${entry.sleepStart} → ${entry.wakeTime} · ${entry.durationHours} 小时`
+          : `${entry.durationHours} 小时`;
+      chunks.push(`- ${loggedOn}：${range}\n`);
+    }
+  }
+
+  chunks.push("\n### 身体测量\n\n");
+  if (measures.length === 0) {
+    chunks.push("还没有记录。\n");
+  } else {
+    for (const entry of measures) {
+      const parts = [
+        entry.weightKg != null ? `体重 ${entry.weightKg} kg` : null,
+        entry.bodyFatPct != null ? `体脂 ${entry.bodyFatPct}%` : null,
+        entry.chestCm != null ? `胸围 ${entry.chestCm} cm` : null,
+        entry.waistCm != null ? `腰围 ${entry.waistCm} cm` : null,
+        entry.thighCm != null ? `腿围 ${entry.thighCm} cm` : null,
+      ].filter(Boolean);
+      chunks.push(`- ${day(entry.logDate)}：${parts.join("，")}\n`);
+    }
   }
 
   chunks.push("\n### 体检情况\n\n");
-  if (!exam) {
-    chunks.push("尚未填写。\n");
+  if (exams.length === 0) {
+    chunks.push("还没有记录。\n");
   } else {
-    chunks.push(`更新时间：${when(exam.updatedAt)}\n\n`);
-    chunks.push(line("检查日期", exam.examDate ? day(exam.examDate) : null));
-    const examLines: [string, string | null][] = [
-      ["心", exam.heart],
-      ["肺", exam.lung],
-      ["肝", exam.liver],
-      ["胆", exam.gallbladder],
-      ["脾", exam.spleen],
-      ["肾", exam.kidney],
-      ["甲状腺", exam.thyroid],
-      ["白细胞", exam.wbc],
-      ["红细胞", exam.rbc],
-      ["血红蛋白", exam.hemoglobin],
-      ["血小板", exam.platelets],
-      ["尿蛋白", exam.urineProtein],
-      ["尿糖", exam.urineGlucose],
-      ["潜血", exam.urineBlood],
-      ["血糖", exam.glucose],
-      ["尿酸", exam.uricAcid],
-      ["总胆固醇", exam.cholesterol],
-      ["甘油三酯", exam.triglycerides],
-      ["低密度脂蛋白", exam.ldl],
-      ["谷丙转氨酶", exam.alt],
-      ["肌酐", exam.creatinine],
-      ["收缩压", exam.systolic],
-      ["舒张压", exam.diastolic],
-      ["静息心率", exam.restingHeartRate],
-    ];
-    for (const [label, value] of examLines) chunks.push(line(label, value));
+    for (const exam of exams) {
+      chunks.push(`\n#### ${day(exam.logDate)}\n\n`);
+      if (exam.images.length === 0) {
+        chunks.push("（无图片附件）\n");
+      } else {
+        for (const image of exam.images) {
+          chunks.push(`- ${image.originalName}\n`);
+        }
+      }
+    }
   }
 
   chunks.push("\n## 身体日志\n");

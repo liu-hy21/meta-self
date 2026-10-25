@@ -15,9 +15,46 @@ Q 版只给家庭里这两个页面。其它主页面保持直角、硬阴影的
 
 主区域包在 `.monitor` 里：4px 墨色边、`8px 8px 0` 硬阴影、米色底加细横纹。壳层外是书桌色 `--desk` 和 8px 网格。
 
-从左到右：侧栏、顶栏 + 滚动内容。身体 / 心态 / 工作 / 关系档案，以及厨房看板，右侧还有一条竖栏（宽 320px），内容随当前页变化：档案页是对应日志，厨房是菜的做法。其它主页面不显示这条栏。日志写在竖栏里，用 `RailPortal` 挂进去，不要再做独立的采集菜单。内容区自己滚动，页面不要再套一层全屏滚动容器。
+从左到右：侧栏、顶栏 + 滚动内容。心态 / 工作 / 关系档案，以及厨房看板，右侧还有一条竖栏（宽 320px），内容随当前页变化：档案页是对应日志，厨房是菜的做法。身体档案在主区域填写，不使用这条栏。其它主页面不显示这条栏。日志写在竖栏里，用 `RailPortal` 挂进去，不要再做独立的采集菜单。内容区自己滚动，页面不要再套一层全屏滚动容器。
 
 侧栏图标：`viewBox="0 0 16 16"`，`strokeWidth="1.75"`，`strokeLinecap="square"`，class `size-4`。
+
+主内容滚动在 `main-shell` 里带 `data-main-scroll` 的 `overflow-y-auto` 容器上，不是 `window`。凡在同一页用查询参数切换「记一条 / 修改 / 返回」或保存后回到列表，都**不能**把这条滚动条拉回顶部。
+
+## 身体档案（`/body/profile`）
+
+主区域分两块，不要混成一种交互。
+
+| 类型 | 内容 | 交互 |
+| --- | --- | --- |
+| 固定数据 | 身高、生日、性别、血型；饮食习惯 | 卡片上「修改」，保存后仍用固定档案，不是记一条 |
+| 快照 | 身体测量、体检、睡眠、看病 | 「记一条」打开 `PixelModal` 弹窗；除**体检**外日期按保存当天自动记；**体检**为自选日期 + 上传报告图片（`multipart`，存 `storage/body-exam-images`，经 `/api/body/exam-images/[id]` 读取） |
+
+**视觉**：身体页是独立的「临床监护台」皮肤，根节点 `${pageWrap} vital`。深墨绿底、细线网格、薄荷色信号线，数字用等宽字体。不要套 `pixel-box` / `submitClass`，也不要用家庭的 Q 版样式。样式在 `globals.css` 的 `.vital*` 一节；按钮用 `vital-btn` / `vital-btn vital-btn--solid`，面板用 `vital-panel`（`data-tone="amber" | "coral"` 换顶边色）。
+
+快照历史列在对应面板里。不用右侧竖栏，不用 `RailPortal`。实现见 `src/components/body/body-console.tsx`、`src/components/body/vital-modal.tsx`；URL 解析 `resolveSnapshotModalOpen` 在 `src/lib/body-snapshot-modal.ts`（服务端可调用）。
+
+外链仍可用 `?measureWrite=1` / `?examWrite=1` / `?sleepWrite=1` / `?medicalWrite=1` 打开对应弹窗（进入后 URL 会清掉查询参数）。弹窗内保存用 `ProfileActionForm` 的 `afterSuccess="refresh"`，不要用 `navigate`。
+
+## 主区域滚动（记一条 / 返回 / 保存）
+
+实现：`src/components/shell/main-shell.tsx`（`data-main-scroll`）、`src/components/ui/preserve-scroll-link.tsx`、`src/components/body/profile-scroll-restore.tsx`、`src/components/body/profile-action-form.tsx`。
+
+**固定数据的「修改 / 返回」** 用 `PreserveScrollLink`，不要用裸 `Link`。它会在跳转前把 `data-main-scroll` 的 `scrollTop` 写入 `sessionStorage`，并设 `scroll={false}`，避免 Next 默认滚到页顶。快照「记一条」用弹窗，不走路由，主区域滚动自然不变。
+
+**页面** 在 `pageWrap` 根下挂：
+
+```tsx
+<Suspense fallback={null}>
+  <ProfileScrollRestore />
+</Suspense>
+```
+
+`ProfileScrollRestore` 在 `pathname` / `searchParams` 变化后（仅 `/body/profile`）从 `sessionStorage` 恢复滚动；必要时用 `requestAnimationFrame` 多试几次，等布局稳定。
+
+**表单保存** 用 `ProfileActionForm` 包一层，不要用裸 `<form action={serverAction}>`。身体档案相关 Server Action **不要** `redirect("/body/profile")`：保存成功后由客户端 `router.replace("/body/profile", { scroll: false })` 关掉 `?measureWrite=1` 等参数；校验失败返回 `{ ok: false }`，不跳转。提交开始时同样先 `saveMainScrollPosition()`。
+
+厨房 / 家务等同页模式切换已在链接上使用 `scroll={false}`；若滚动容器仍是 `data-main-scroll`，可复用 `PreserveScrollLink` 与恢复逻辑，不要另写一套「保存后整页跳顶」的 `redirect`。
 
 ## 页面宽度与间距
 
