@@ -11,7 +11,6 @@ function railMode(pathname: string) {
   if (pathname.startsWith("/library/family/kitchen")) return "kitchen";
   if (pathname.startsWith("/mind/profile")) return "mind";
   if (pathname.startsWith("/work/profile")) return "work";
-  if (pathname.startsWith("/relation/profile")) return "relation";
   return null;
 }
 
@@ -19,7 +18,6 @@ const titles: Record<Exclude<ReturnType<typeof railMode>, null>, string> = {
   kitchen: "做法",
   mind: "心态日志",
   work: "工作日志",
-  relation: "关系日志",
 };
 
 function KitchenDishLogPanel({

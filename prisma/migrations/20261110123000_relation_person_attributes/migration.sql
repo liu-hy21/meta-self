@@ -1,0 +1,13 @@
+ALTER TABLE `RelationPerson`
+  ADD COLUMN `birthDate` DATE NULL,
+  ADD COLUMN `zodiac` VARCHAR(191) NULL,
+  ADD COLUMN `mbti` VARCHAR(191) NULL,
+  ADD COLUMN `heightCm` DOUBLE NULL,
+  ADD COLUMN `weightKg` DOUBLE NULL,
+  ADD COLUMN `hometown` TEXT NULL,
+  ADD COLUMN `familySituation` TEXT NULL,
+  ADD COLUMN `undergraduate` TEXT NULL,
+  ADD COLUMN `graduate` TEXT NULL,
+  ADD COLUMN `major` TEXT NULL,
+  ADD COLUMN `company` TEXT NULL,
+  ADD COLUMN `jobTitle` TEXT NULL;

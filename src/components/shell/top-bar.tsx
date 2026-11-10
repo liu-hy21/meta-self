@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { articleTopicLabel } from "@/lib/library-article";
@@ -51,15 +52,34 @@ function titleFor(pathname: string) {
     const label = section ? familySectionLabel(section) : null;
     return label ? `家庭 · ${label}` : "家庭";
   }
+  if (pathname.startsWith("/relation/people/")) return "关系 · 人物详情";
+  if (pathname.startsWith("/relation/chat/")) return "关系 · 原文";
+  if (pathname.startsWith("/relation/analysis/")) return pathname.endsWith("/ai") ? "关系 · AI 分析" : "关系 · 数据分析";
   return titles[pathname] ?? "身体";
 }
 
 export function TopBar() {
   const pathname = usePathname();
+  const isRelationPerson = pathname.startsWith("/relation/people/");
 
   return (
     <header className="flex h-14 shrink-0 items-center border-b-4 border-[var(--ink)] bg-[var(--panel)] px-5">
-      <h1 className="truncate text-sm font-semibold">{titleFor(pathname)}</h1>
+      <div className="flex min-w-0 items-center gap-2">
+        {isRelationPerson ? (
+          <Link
+            href="/relation/profile"
+            aria-label="返回人物管理"
+            title="返回人物管理"
+            className="grid size-7 shrink-0 place-items-center border-2 border-[var(--ink)] bg-[var(--panel)] text-[var(--ink)] transition-colors hover:bg-[var(--gold)]"
+          >
+            <svg aria-hidden viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter">
+              <path d="M10.5 3 5.5 8l5 5" />
+              <path d="M6 8h6" />
+            </svg>
+          </Link>
+        ) : null}
+        <h1 className="truncate text-sm font-semibold">{titleFor(pathname)}</h1>
+      </div>
     </header>
   );
 }

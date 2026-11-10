@@ -85,50 +85,53 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  bodyProfile          BodyProfile?
-  bodyDiet             BodyDiet?
-  bodySleepHabit       BodySleepHabit?
-  bodyExam             BodyExam?
-  bodyMeasureLogs      BodyMeasureLog[]
-  bodyExamLogs         BodyExamLog[]
-  bodyInfoLogs         BodyInfoLog[]
-  medicalVisitLogs     MedicalVisitLog[]
-  aiAdviceLogs         AiAdviceLog[]
-  mindProfile          MindProfile?
-  mindInfoLogs         MindInfoLog[]
-  workProfile          WorkProfile?
-  workInfoLogs         WorkInfoLog[]
-  workCredentials      WorkCredential[]
-  relationProfile      RelationProfile?
-  relationInfoLogs     RelationInfoLog[]
-  financeProfile       FinanceProfile?
-  financeInfoLogs      FinanceInfoLog[]
-  financeHoldings      FinanceHolding[]
-  financeHoldingLogs   FinanceHoldingLog[]
-  choreLogs            ChoreLog[]
-  kitchenSeasonings    KitchenSeasoning[]
-  kitchenVegetables    KitchenVegetable[]
-  kitchenMeats         KitchenMeat[]
-  kitchenDishes        KitchenDish[]
-  kitchenCleanings     KitchenCleaning[]
+  bodyProfile           BodyProfile?
+  bodyDiet              BodyDiet?
+  bodySleepHabit        BodySleepHabit?
+  bodyExam              BodyExam?
+  bodyMeasureLogs       BodyMeasureLog[]
+  bodyExamLogs          BodyExamLog[]
+  bodyInfoLogs          BodyInfoLog[]
+  medicalVisitLogs      MedicalVisitLog[]
+  aiAdviceLogs          AiAdviceLog[]
+  mindProfile           MindProfile?
+  mindInfoLogs          MindInfoLog[]
+  workProfile           WorkProfile?
+  workInfoLogs          WorkInfoLog[]
+  workCredentials       WorkCredential[]
+  relationProfile       RelationProfile?
+  relationInfoLogs      RelationInfoLog[]
+  relationChatArchives  RelationChatArchive[]
+  relationAiReports     RelationAiReport[]
+  relationMetricLedgers RelationMetricLedger[]
+  financeProfile        FinanceProfile?
+  financeInfoLogs       FinanceInfoLog[]
+  financeHoldings       FinanceHolding[]
+  financeHoldingLogs    FinanceHoldingLog[]
+  choreLogs             ChoreLog[]
+  kitchenSeasonings     KitchenSeasoning[]
+  kitchenVegetables     KitchenVegetable[]
+  kitchenMeats          KitchenMeat[]
+  kitchenDishes         KitchenDish[]
+  kitchenCleanings      KitchenCleaning[]
   familySupportContacts FamilySupportContact[]
-  playDistricts        PlayDistrict[]
-  trips                Trip[]
-  libraryVideos        LibraryVideo[]
+  playDistricts         PlayDistrict[]
+  trips                 Trip[]
+  libraryVideos         LibraryVideo[]
   libraryArticleEntries LibraryArticleEntry[]
-  vitalMetrics         VitalMetric[]
-  sleepLogs            SleepLog[]
-  mealLogs             MealLog[]
-  moodLogs             MoodLog[]
-  companySnapshots     WorkCompanySnapshot[]
-  techStackItems       TechStackItem[]
-  expressionReviews    ExpressionReview[]
-  relationPeople       RelationPerson[]
-  relationInteractions RelationInteraction[]
-  assetSnapshots       FinanceAssetSnapshot[]
-  literacyLogs         FinanceLiteracyLog[]
-  reports              Report[]
-  reportSchedule       ReportSchedule?
+  vitalMetrics          VitalMetric[]
+  sleepLogs             SleepLog[]
+  mealLogs              MealLog[]
+  moodLogs              MoodLog[]
+  companySnapshots      WorkCompanySnapshot[]
+  techStackItems        TechStackItem[]
+  expressionReviews     ExpressionReview[]
+  relationPeople        RelationPerson[]
+  relationInteractions  RelationInteraction[]
+  assetSnapshots        FinanceAssetSnapshot[]
+  literacyLogs          FinanceLiteracyLog[]
+  reports               Report[]
+  reportSchedule        ReportSchedule?
 }
 
 model BodyProfile {
@@ -148,14 +151,14 @@ model BodyProfile {
 }
 
 model BodyDiet {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  proteinFoods  String?  @db.Text
-  fatFoods      String?  @db.Text
-  carbFoods     String?  @db.Text
-  vitaminFoods  String?  @db.Text
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  proteinFoods String?  @db.Text
+  fatFoods     String?  @db.Text
+  carbFoods    String?  @db.Text
+  vitaminFoods String?  @db.Text
+  updatedAt    DateTime @updatedAt
 }
 
 model BodySleepHabit {
@@ -268,9 +271,9 @@ model MedicalVisitLog {
 }
 
 model ChoreLog {
-  id        String       @id @default(cuid())
-  userId    String
-  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String       @id @default(cuid())
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   cadence     ChoreCadence
   text        String       @db.Text
   doneOn      DateTime     @default(now())
@@ -368,14 +371,14 @@ model AiAdviceLog {
 }
 
 model MindProfile {
-  id            String   @id @default(cuid())
-  userId        String   @unique
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  emotionWords  String?  @db.Text
-  emotionLevel  Int?
-  psycheNote    String?  @db.Text
-  stressNote    String?  @db.Text
-  updatedAt     DateTime @updatedAt
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emotionWords String?  @db.Text
+  emotionLevel Int?
+  psycheNote   String?  @db.Text
+  stressNote   String?  @db.Text
+  updatedAt    DateTime @updatedAt
 }
 
 model MindInfoLog {
@@ -391,18 +394,18 @@ model MindInfoLog {
 }
 
 model WorkProfile {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  companyName String?
-  department  String?
-  role        String?
-  joinedOn    String?
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyName  String?
+  department   String?
+  role         String?
+  joinedOn     String?
   proficient   String?  @db.Text
   learning     String?  @db.Text
   retired      String?  @db.Text
   studyHistory String?  @db.Text
-  updatedAt   DateTime @updatedAt
+  updatedAt    DateTime @updatedAt
 }
 
 model WorkInfoLog {
@@ -457,13 +460,13 @@ model RelationInfoLog {
 }
 
 model FinanceProfile {
-  id               String   @id @default(cuid())
-  userId           String   @unique
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  cashCents        Int?
-  investmentCents  Int?
-  liabilityCents   Int?
-  updatedAt        DateTime @updatedAt
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  cashCents       Int?
+  investmentCents Int?
+  liabilityCents  Int?
+  updatedAt       DateTime @updatedAt
 }
 
 model FinanceInfoLog {
@@ -686,14 +689,31 @@ model ExpressionReview {
 }
 
 model RelationPerson {
-  id           String               @id @default(cuid())
+  id           String                @id @default(cuid())
   userId       String
-  user         User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
   name         String
-  note         String?              @db.Text
-  createdAt    DateTime             @default(now())
+  birthDate    DateTime?             @db.Date
+  zodiac       String?
+  mbti         String?
+  heightCm     Float?
+  weightKg     Float?
+  hometown     String?               @db.Text
+  familySituation String?            @db.Text
+  undergraduate String?              @db.Text
+  graduate     String?               @db.Text
+  major        String?               @db.Text
+  company      String?               @db.Text
+  jobTitle     String?               @db.Text
+  note         String?               @db.Text
+  createdAt    DateTime              @default(now())
   kinds        RelationPersonKind[]
   interactions RelationInteraction[]
+  archives     RelationChatArchive[]
+  aiReports    RelationAiReport[]
+  metricLedgers RelationMetricLedger[]
+
+  @@index([userId])
 }
 
 model RelationPersonKind {
@@ -705,18 +725,74 @@ model RelationPersonKind {
 }
 
 model RelationInteraction {
-  id           String     @id @default(cuid())
+  id           String         @id @default(cuid())
   userId       String
-  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   personId     String
   person       RelationPerson @relation(fields: [personId], references: [id], onDelete: Cascade)
   occurredAt   DateTime
-  note         String     @db.Text
+  note         String         @db.Text
   feelingScore Int
-  source       DataSource @default(MANUAL)
-  createdAt    DateTime   @default(now())
+  source       DataSource     @default(MANUAL)
+  createdAt    DateTime       @default(now())
 
   @@index([userId, occurredAt])
+}
+
+model RelationChatArchive {
+  id           String         @id @default(cuid())
+  userId       String
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  personId     String
+  person       RelationPerson @relation(fields: [personId], references: [id], onDelete: Cascade)
+  sourceType   String
+  sourceKey    String
+  archivePath  String         @db.Text
+  periodStart  DateTime
+  periodEnd    DateTime
+  messageCount Int
+  importedAt   DateTime
+  analysisStatus String @default("PENDING")
+  metricsJson   Json?
+  analyzedAt    DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@unique([userId, sourceType, sourceKey])
+  @@index([userId, personId])
+}
+
+model RelationAiReport {
+  id              String         @id @default(cuid())
+  userId          String
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  personId        String
+  person          RelationPerson @relation(fields: [personId], references: [id], onDelete: Cascade)
+  periodStart     DateTime
+  periodEnd       DateTime
+  model           String
+  status          String
+  contentMarkdown String         @db.LongText
+  evidenceJson    Json
+  errorMessage    String?        @db.Text
+  createdAt       DateTime       @default(now())
+  completedAt     DateTime?
+
+  @@index([userId, personId, createdAt])
+}
+
+model RelationMetricLedger {
+  id          String         @id @default(cuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  personId    String
+  person      RelationPerson @relation(fields: [personId], references: [id], onDelete: Cascade)
+  name        String
+  calculation String         @db.Text
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([userId, personId, createdAt])
 }
 
 model FinanceAssetSnapshot {

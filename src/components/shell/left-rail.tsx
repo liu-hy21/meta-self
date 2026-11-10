@@ -93,11 +93,12 @@ export function LeftRail({ items }: { items: BodyNavItem[] }) {
   const logAttention = items.some((item) => item.key !== "today" && item.key !== "profile" && item.status === "attention");
   const englishOpen = pathname.startsWith(englishHref);
   const playOpen = pathname.startsWith(financeProfileHref) || pathname.startsWith(playHref) || englishOpen;
+  const relationOpen = pathname.startsWith("/relation/");
   const profileOpen =
     pathname.startsWith("/body/profile") ||
     pathname.startsWith(mindProfileHref) ||
     pathname.startsWith(workProfileHref) ||
-    pathname.startsWith(relationProfileHref);
+    relationOpen;
   const libraryOpen = pathname.startsWith("/library") && !pathname.startsWith(familyHref);
   const dataAssetsOpen = pathname.startsWith(drawHref) || pathname.startsWith(corpHref);
   const drawOpen = pathname.startsWith(drawHref);
@@ -204,7 +205,7 @@ export function LeftRail({ items }: { items: BodyNavItem[] }) {
             />
             <RailLink href={mindProfileHref} label="心态" active={pathname.startsWith(mindProfileHref)} nested />
             <RailLink href={workProfileHref} label="工作" active={pathname.startsWith(workProfileHref)} nested />
-            <RailLink href={relationProfileHref} label="关系" active={pathname.startsWith(relationProfileHref)} nested />
+            <RailLink href={relationProfileHref} label="关系" active={relationOpen} nested />
           </Group>
         ) : null}
 

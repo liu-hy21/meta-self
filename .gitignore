@@ -39,6 +39,9 @@ yarn-error.log*
 # wechat screenshots / OCR (local only; export → docs/聊天记录.json)
 /docs/wechat-history/
 
+# local chat archive; keep it on this machine, never commit private text
+/bc_chat_*.md
+
 # vercel
 .vercel
 

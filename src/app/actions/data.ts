@@ -39,6 +39,8 @@ import {
 import type { FinanceHoldingAccount } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { generateReportForUser } from "@/lib/reports/generate";
+import { generateRelationAiReport } from "@/lib/relation/ai-analysis";
+import { analyzeRelationPerson } from "@/lib/relation/analysis";
 import {
   workCredentialDir,
   workCredentialExt,
@@ -56,6 +58,9 @@ function revalidateApp() {
   revalidatePath("/work/log");
   revalidatePath("/relation/profile");
   revalidatePath("/relation/log");
+  revalidatePath("/relation/people", "layout");
+  revalidatePath("/relation/chat", "layout");
+  revalidatePath("/relation/analysis", "layout");
   revalidatePath("/finance/profile");
   revalidatePath("/play");
   revalidatePath("/body/sleep");
@@ -1211,6 +1216,78 @@ export async function createRelationInteraction(formData: FormData) {
   revalidateApp();
 }
 
+export async function analyzeRelationPersonAction(formData: FormData) {
+  const userId = await getAppUserId();
+  const personId = String(formData.get("personId") ?? "");
+  if (!personId) return;
+
+  await analyzeRelationPerson(userId, personId);
+  revalidatePath("/relation/profile");
+  revalidatePath(`/relation/people/${personId}`);
+  revalidatePath(`/relation/analysis/${personId}`);
+  revalidatePath(`/relation/analysis/${personId}/ai`);
+}
+
+export async function createRelationMetricLedgerAction(formData: FormData) {
+  const userId = await getAppUserId();
+  const personId = String(formData.get("personId") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const calculation = String(formData.get("calculation") ?? "").trim();
+  if (!personId || !name || !calculation) return;
+
+  const person = await prisma.relationPerson.findFirst({ where: { id: personId, userId }, select: { id: true } });
+  if (!person) return;
+  await prisma.relationMetricLedger.create({ data: { userId, personId, name, calculation } });
+  revalidatePath(`/relation/analysis/${personId}`);
+}
+
+export async function updateRelationMetricLedgerAction(formData: FormData) {
+  const userId = await getAppUserId();
+  const personId = String(formData.get("personId") ?? "");
+  const id = String(formData.get("id") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  const calculation = String(formData.get("calculation") ?? "").trim();
+  if (!personId || !id || !name || !calculation) return;
+
+  const entry = await prisma.relationMetricLedger.findFirst({ where: { id, personId, userId }, select: { id: true } });
+  if (!entry) return;
+  await prisma.relationMetricLedger.update({ where: { id }, data: { name, calculation } });
+  revalidatePath(`/relation/analysis/${personId}`);
+}
+
+export async function updateRelationPersonProfileAction(formData: FormData) {
+  const userId = await getAppUserId();
+  const personId = String(formData.get("personId") ?? "");
+  if (!personId) return;
+  const person = await prisma.relationPerson.findFirst({ where: { id: personId, userId } });
+  if (!person) return;
+
+  const birthRaw = String(formData.get("birthDate") ?? "").trim();
+  const birthDate = birthRaw ? new Date(`${birthRaw}T00:00:00.000Z`) : null;
+  const name = optionalText(formData, "name") || person.name;
+  await prisma.relationPerson.update({
+    where: { id: personId },
+    data: {
+      name,
+      birthDate: birthDate && !Number.isNaN(birthDate.getTime()) ? birthDate : null,
+      zodiac: optionalText(formData, "zodiac"),
+      mbti: optionalText(formData, "mbti"),
+      heightCm: optionalNumber(formData, "heightCm"),
+      weightKg: optionalNumber(formData, "weightKg"),
+      hometown: optionalText(formData, "hometown"),
+      familySituation: optionalText(formData, "familySituation"),
+      undergraduate: optionalText(formData, "undergraduate"),
+      graduate: optionalText(formData, "graduate"),
+      major: optionalText(formData, "major"),
+      company: optionalText(formData, "company"),
+      jobTitle: optionalText(formData, "jobTitle"),
+    },
+  });
+  revalidatePath("/relation/profile");
+  revalidatePath(`/relation/people/${personId}`);
+  redirect(`/relation/people/${personId}`);
+}
+
 export async function createAssetSnapshot(formData: FormData) {
   const userId = await getAppUserId();
   const cash = Number(formData.get("cashYuan") ?? 0);
@@ -1296,6 +1373,24 @@ export async function generateBiweeklyReport() {
 
 export async function generateMonthlyReport() {
   await generateReportAction("MONTHLY");
+}
+
+export type RelationAiActionState = { ok: boolean; message: string };
+
+export async function generateRelationAiReportAction(
+  _previousState: RelationAiActionState,
+  formData: FormData,
+): Promise<RelationAiActionState> {
+  const userId = await getAppUserId();
+  const personId = String(formData.get("personId") ?? "");
+  if (!personId) return { ok: false, message: "缺少人物档案。" };
+  try {
+    await generateRelationAiReport(userId, personId);
+    revalidatePath(`/relation/analysis/${personId}/ai`);
+    return { ok: true, message: "AI 分析已生成，已保存到当前人物档案。" };
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : "AI 分析生成失败。" };
+  }
 }
 
 export async function updateReportContent(reportId: string, content: string) {

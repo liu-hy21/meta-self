@@ -1,0 +1,4 @@
+ALTER TABLE `RelationChatArchive`
+  ADD COLUMN `analysisStatus` VARCHAR(191) NOT NULL DEFAULT 'PENDING',
+  ADD COLUMN `metricsJson` JSON NULL,
+  ADD COLUMN `analyzedAt` DATETIME(3) NULL;

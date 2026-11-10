@@ -14,6 +14,7 @@ const requiredDelegates = [
   "financeHolding",
   "financeHoldingLog",
   "familySupportContact",
+  "relationMetricLedger",
   "bodyMeasureLog",
   "bodyExamLog",
   "bodyExamLogImage",
@@ -32,7 +33,7 @@ function clientIsFresh(client: PrismaClient) {
     return false;
   }
   return requiredDelegates.every((key) => {
-    const delegate = (client as Record<string, unknown>)[key];
+    const delegate = (client as unknown as Record<string, unknown>)[key];
     return delegate != null && typeof delegate === "object" && "findMany" in delegate;
   });
 }
