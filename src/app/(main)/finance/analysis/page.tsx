@@ -1,9 +1,14 @@
 import Link from "next/link";
+import type { FinanceHoldingAccount } from "@prisma/client";
 
 import { FinanceAnalysisTabs, type FinanceAnalysisView } from "@/components/finance/finance-analysis-tabs";
 import { FinanceAnalysisView as FinanceAnalysisContent } from "@/components/finance/finance-analysis-view";
 import { FinanceVisibilityProvider, FinanceVisibilityToggle } from "@/components/finance/finance-visibility";
 import { pageWrap } from "@/components/ui/form-shell";
+import { buildFinanceAssetMetrics } from "@/lib/finance-asset-metrics";
+import { financeHoldingConfigs } from "@/lib/finance-holdings";
+import { prisma } from "@/lib/db";
+import { getAppUser } from "@/lib/user";
 
 const validViews: FinanceAnalysisView[] = ["signals", "metrics", "ai"];
 
@@ -14,6 +19,11 @@ export default async function FinanceAnalysisPage({
 }) {
   const { view: requestedView } = await searchParams;
   const view = validViews.includes(requestedView as FinanceAnalysisView) ? requestedView as FinanceAnalysisView : "signals";
+  const user = view === "metrics" ? await getAppUser() : null;
+  const holdings = user ? await prisma.financeHolding.findMany({ where: { userId: user.id } }) : [];
+  const amounts = new Map<FinanceHoldingAccount, number>(financeHoldingConfigs.map((config) => [config.account, 0]));
+  for (const holding of holdings) amounts.set(holding.account, holding.amountMinor);
+  const metrics = view === "metrics" ? buildFinanceAssetMetrics(amounts) : undefined;
 
   return (
     <div className={pageWrap}>
@@ -37,7 +47,7 @@ export default async function FinanceAnalysisPage({
           </header>
 
           <FinanceAnalysisTabs current={view} />
-          <FinanceAnalysisContent view={view} />
+          <FinanceAnalysisContent view={view} metrics={metrics} />
         </div>
       </FinanceVisibilityProvider>
     </div>

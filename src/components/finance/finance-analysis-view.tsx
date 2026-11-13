@@ -1,6 +1,8 @@
 import type { ReactNode } from "react";
 
+import { FinanceAssetMetricsDashboard } from "@/components/finance/finance-asset-metrics-dashboard";
 import type { FinanceAnalysisView as FinanceAnalysisViewKey } from "@/components/finance/finance-analysis-tabs";
+import type { FinanceAssetMetrics } from "@/lib/finance-asset-metrics";
 
 const card = "border border-[var(--ink)]/10 bg-[var(--panel)] shadow-[0_1px_2px_rgba(28,25,23,0.04)]";
 const eyebrow = "text-[10px] tracking-[0.2em] text-[var(--muted)]";
@@ -46,29 +48,9 @@ function SignalsPanel() {
   );
 }
 
-function MetricsPanel() {
-  return (
-    <section className="space-y-5" aria-labelledby="finance-metrics-title">
-      <div className={`${card} p-6 sm:p-7`}>
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className={eyebrow}>PORTFOLIO METRICS</p>
-            <h2 id="finance-metrics-title" className="mt-2 text-xl font-semibold text-[var(--ink)]">我的资产结构 · 纯指标</h2>
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">只展示资产结构本身的指标，不在这一层直接做买入或卖出判断。</p>
-          </div>
-          <StateBadge>待计算</StateBadge>
-        </div>
-      </div>
-      <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-        <PlaceholderCard label="五层权重" description="高波动、科技防守、消费防守、压舱和安全层的结构占比。" state="待计算" />
-        <PlaceholderCard label="QQQ / VOO 差额" description="检查 QQQ 相对 VOO 的策略差额是否满足要求。" state="待计算" />
-        <PlaceholderCard label="现金安全垫" description="检查可配置现金与 5 万元流动现金底线。" state="待计算" />
-        <PlaceholderCard label="消费防守上限" description="检查 MCD、COKE 合计占比是否超过 10% 上限。" state="待计算" />
-        <PlaceholderCard label="黄金占比" description="独立观察黄金在消费防守层中的占比。" state="待计算" />
-        <PlaceholderCard label="目标偏差" description="对照五层配比研究中的阶段目标记录偏差。" state="待计算" />
-      </div>
-    </section>
-  );
+function MetricsPanel({ metrics }: { metrics?: FinanceAssetMetrics }) {
+  if (!metrics) return <p className="text-sm text-[var(--muted)]">暂无资产数据</p>;
+  return <FinanceAssetMetricsDashboard metrics={metrics} />;
 }
 
 function AiPanel() {
@@ -113,8 +95,8 @@ function AiPanel() {
   );
 }
 
-export function FinanceAnalysisView({ view }: { view: FinanceAnalysisViewKey }) {
-  if (view === "metrics") return <MetricsPanel />;
+export function FinanceAnalysisView({ view, metrics }: { view: FinanceAnalysisViewKey; metrics?: FinanceAssetMetrics }) {
+  if (view === "metrics") return <MetricsPanel metrics={metrics} />;
   if (view === "ai") return <AiPanel />;
   return <SignalsPanel />;
 }

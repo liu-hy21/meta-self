@@ -5,6 +5,8 @@ async function main() {
   const tabsSource = await readFile("src/components/finance/finance-analysis-tabs.tsx", "utf8");
   const pageSource = await readFile("src/app/(main)/finance/analysis/page.tsx", "utf8");
   const viewSource = await readFile("src/components/finance/finance-analysis-view.tsx", "utf8");
+  const metricsSource = await readFile("src/components/finance/finance-asset-metrics-dashboard.tsx", "utf8");
+  const metricLogicSource = await readFile("src/lib/finance-asset-metrics.ts", "utf8");
   const assetsSource = await readFile("src/components/finance/finance-assets-section.tsx", "utf8");
   const topBarSource = await readFile("src/components/shell/top-bar.tsx", "utf8");
   const leftRailSource = await readFile("src/components/shell/left-rail.tsx", "utf8");
@@ -28,15 +30,22 @@ async function main() {
   assert.match(pageSource, /FinanceVisibilityToggle/);
 
   assert.match(viewSource, /市场信号分析/);
-  assert.match(viewSource, /我的资产结构 · 纯指标/);
+  assert.match(viewSource, /FinanceAssetMetricsDashboard/);
   assert.match(viewSource, /AI 分析/);
   assert.match(viewSource, /真实当前市场信号/);
   assert.match(viewSource, /我的资产结构纯指标/);
   assert.match(viewSource, /五层资产配比与市场阶段研究/);
   assert.match(viewSource, /待接入/);
-  assert.match(viewSource, /待计算/);
   assert.match(viewSource, /AI 报告待生成/);
   assert.doesNotMatch(viewSource, /\bfetch\s*\(/);
+
+  assert.match(metricsSource, /绝对上限/);
+  assert.match(metricsSource, /流动现金/);
+  assert.match(metricsSource, /FinanceAssetAllocationPie/);
+  assert.match(metricsSource, /aria-pressed/);
+  assert.match(metricLogicSource, /FINANCE_EMERGENCY_CASH_FLOOR_CNY_MINOR/);
+  assert.match(metricLogicSource, /ABSOLUTE_LIMITS/);
+  assert.match(metricLogicSource, /overLimitCount/);
 
   assert.match(assetsSource, /href="\/finance\/analysis\?view=signals"/);
   assert.match(assetsSource, /数据分析/);

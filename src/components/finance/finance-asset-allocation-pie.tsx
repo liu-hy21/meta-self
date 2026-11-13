@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { FinanceSensitiveAmount } from "@/components/finance/finance-visibility";
-import { splitCnyMinor, type AssetAllocationSlice } from "@/lib/finance-holdings";
+import { splitCnyMinor, type AssetAllocationKey, type AssetAllocationSlice } from "@/lib/finance-holdings";
 
 const SIZE = 200;
 const STROKE = 22;
@@ -11,11 +11,36 @@ const RADIUS = (SIZE - STROKE) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 const GAP = 3;
 
-export function FinanceAssetAllocationPie({ slices }: { slices: AssetAllocationSlice[] }) {
-  const [active, setActive] = useState<string | null>(null);
+type AllocationStatus = "ok" | "over" | "unlimited";
+
+type FinanceAssetAllocationPieProps = {
+  slices: AssetAllocationSlice[];
+  sliceStates?: Partial<Record<AssetAllocationKey, AllocationStatus>>;
+  showStatus?: boolean;
+  activeKey?: AssetAllocationKey | null;
+  onActiveChange?: (key: AssetAllocationKey | null) => void;
+};
+
+export function FinanceAssetAllocationPie({
+  slices,
+  sliceStates,
+  showStatus = false,
+  activeKey,
+  onActiveChange,
+}: FinanceAssetAllocationPieProps) {
+  const [internalSelected, setInternalSelected] = useState<AssetAllocationKey | null>(null);
+  const [hovered, setHovered] = useState<AssetAllocationKey | null>(null);
+  const selected = activeKey === undefined ? internalSelected : activeKey;
+  const active = hovered ?? selected;
   const total = slices.reduce((sum, s) => sum + s.cnyMinor, 0);
   const visible = slices.filter((s) => s.cnyMinor > 0);
   const focused = slices.find((s) => s.key === active) ?? null;
+
+  const choose = (key: AssetAllocationKey) => {
+    const next = selected === key ? null : key;
+    if (activeKey === undefined) setInternalSelected(next);
+    onActiveChange?.(next);
+  };
 
   const arcs = visible.map((slice, index) => {
     const offset = visible.slice(0, index).reduce((sum, item) => sum + (item.cnyMinor / total) * CIRCUMFERENCE, 0);
@@ -31,7 +56,7 @@ export function FinanceAssetAllocationPie({ slices }: { slices: AssetAllocationS
   return (
     <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center lg:flex-col xl:flex-row">
       <div className="relative h-44 w-44 shrink-0">
-        <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="h-full w-full -rotate-90" role="img" aria-label="资产结构环形图">
+        <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="h-full w-full -rotate-90" role="group" aria-label="资产结构环形图">
           <circle
             cx={SIZE / 2}
             cy={SIZE / 2}
@@ -43,6 +68,7 @@ export function FinanceAssetAllocationPie({ slices }: { slices: AssetAllocationS
           />
           {arcs.map(({ slice, offset: o, length }) => {
             const dim = active != null && active !== slice.key;
+            const status = sliceStates?.[slice.key];
             return (
               <circle
                 key={slice.key}
@@ -55,10 +81,22 @@ export function FinanceAssetAllocationPie({ slices }: { slices: AssetAllocationS
                 strokeDasharray={`${length} ${CIRCUMFERENCE - length}`}
                 strokeDashoffset={-o}
                 strokeLinecap="butt"
-                className="cursor-pointer transition-[opacity,stroke-width] duration-200"
+                className="cursor-pointer transition-[opacity,stroke-width] duration-200 focus:outline-none"
                 opacity={dim ? 0.28 : 1}
-                onPointerEnter={() => setActive(slice.key)}
-                onPointerLeave={() => setActive(null)}
+                tabIndex={0}
+                role="button"
+                aria-label={`${slice.label}${status === "over" ? "，超限" : status === "unlimited" ? "，不限" : "，正常"}`}
+                onPointerEnter={() => setHovered(slice.key)}
+                onPointerLeave={() => setHovered(null)}
+                onFocus={() => setHovered(slice.key)}
+                onBlur={() => setHovered(null)}
+                onClick={() => choose(slice.key)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    choose(slice.key);
+                  }
+                }}
               />
             );
           })}
@@ -74,24 +112,34 @@ export function FinanceAssetAllocationPie({ slices }: { slices: AssetAllocationS
         {slices.map((slice) => {
           const pct = total > 0 ? (slice.cnyMinor / total) * 100 : 0;
           const isActive = active === slice.key;
+          const status = sliceStates?.[slice.key];
           return (
             <li key={slice.key}>
               <button
                 type="button"
-                onPointerEnter={() => setActive(slice.key)}
-                onPointerLeave={() => setActive(null)}
-                onFocus={() => setActive(slice.key)}
-                onBlur={() => setActive(null)}
+                onClick={() => choose(slice.key)}
+                onPointerEnter={() => setHovered(slice.key)}
+                onPointerLeave={() => setHovered(null)}
+                onFocus={() => setHovered(slice.key)}
+                onBlur={() => setHovered(null)}
+                aria-pressed={selected === slice.key}
                 className={`w-full rounded-lg px-3 py-2 text-left transition-colors ${
                   isActive ? "bg-[var(--ink)]/[0.05]" : ""
                 }`}
               >
                 <div className="flex items-center justify-between gap-3 text-sm">
-                  <span className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: slice.color }} aria-hidden />
-                    <span className="text-[var(--ink)]">{slice.label}</span>
+                  <span className="flex min-w-0 items-center gap-2">
+                    <span className="h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: slice.color }} aria-hidden />
+                    <span className="truncate text-[var(--ink)]">{slice.label}</span>
                   </span>
-                  <span className="tabular-nums text-[var(--muted)]">{pct.toFixed(1)}%</span>
+                  <span className="flex shrink-0 items-center gap-2 tabular-nums text-[var(--muted)]">
+                    {pct.toFixed(1)}%
+                    {showStatus && status ? (
+                      <span className={status === "over" ? "text-[#b42318]" : status === "ok" ? "text-[#1f7a4d]" : "text-[var(--muted)]"}>
+                        {status === "over" ? "超限" : status === "ok" ? "正常" : "不限"}
+                      </span>
+                    ) : null}
+                  </span>
                 </div>
                 <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-[var(--ink)]/[0.06]">
                   <div
