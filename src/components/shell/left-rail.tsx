@@ -94,14 +94,14 @@ export function LeftRail({ items }: { items: BodyNavItem[] }) {
   const logAttention = items.some((item) => item.key !== "today" && item.key !== "profile" && item.status === "attention");
   const englishOpen = pathname.startsWith(englishHref);
   const financeOpen = pathname.startsWith(financeProfileHref) || pathname.startsWith("/finance/analysis");
-  const playOpen = financeOpen || pathname.startsWith(playHref) || englishOpen;
+  const playOpen = financeOpen || pathname.startsWith(playHref) || pathname.startsWith(videoHref) || englishOpen;
   const relationOpen = pathname.startsWith("/relation/");
   const profileOpen =
     pathname.startsWith("/body/profile") ||
     pathname.startsWith(mindProfileHref) ||
     pathname.startsWith(workProfileHref) ||
     relationOpen;
-  const libraryOpen = pathname.startsWith("/library") && !pathname.startsWith(familyHref);
+  const libraryOpen = pathname.startsWith("/library") && !pathname.startsWith(familyHref) && !pathname.startsWith(videoHref);
   const dataAssetsOpen = pathname.startsWith(drawHref) || pathname.startsWith(corpHref);
   const drawOpen = pathname.startsWith(drawHref);
   const familyOpen = pathname.startsWith(familyHref);
@@ -165,6 +165,7 @@ export function LeftRail({ items }: { items: BodyNavItem[] }) {
         >
           <RailLink href={financeProfileHref} label="财商" active={financeOpen} nested />
           <RailLink href={playHref} label="玩商" active={pathname.startsWith(playHref)} nested />
+          <RailLink href={videoHref} label="视频" active={pathname.startsWith(videoHref)} nested />
           <Group
             label="英语"
             open={open.english}
@@ -209,7 +210,6 @@ export function LeftRail({ items }: { items: BodyNavItem[] }) {
           attention={false}
           onToggle={() => toggle("library")}
         >
-          <RailLink href={videoHref} label="视频" active={pathname.startsWith(videoHref)} nested />
           <RailLink href={chatHref} label="聊天记录" active={pathname.startsWith(chatHref)} nested />
           <RailLink href={articleHref} label="知识" active={pathname.startsWith(articleHref)} nested />
           <Group

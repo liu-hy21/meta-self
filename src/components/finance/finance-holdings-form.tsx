@@ -21,6 +21,16 @@ import {
   type HoldingConfig,
 } from "@/lib/finance-holdings";
 import { sharesToAmountMinor } from "@/lib/finance-prices";
+import {
+  financeCard,
+  financeCardHeaderPadding,
+  financeCardPadding,
+  financeDarkCard,
+  financeModuleGap,
+  financeModuleTitle,
+  financeRowPadding,
+  financeStackGap,
+} from "@/components/finance/finance-ui-tokens";
 import type { FinanceHoldingAccount } from "@prisma/client";
 
 const currencySymbol: Record<HoldingConfig["currency"], string> = { USD: "$", HKD: "HK$", CNY: "¥" };
@@ -71,7 +81,7 @@ function HoldingField({
   const cnyMinor = amountMinor == null ? null : holdingToCnyMinor(amountMinor, config);
 
   return (
-    <label className="group flex items-center gap-4 px-5 py-3.5 transition-colors focus-within:bg-[var(--ink)]/[0.03]">
+    <label className={`group flex items-center gap-4 ${financeRowPadding} transition-colors focus-within:bg-[var(--ink)]/[0.03]`}>
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2 text-sm text-[var(--ink)]">
           <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: allocation.color }} aria-hidden />
@@ -137,9 +147,9 @@ function HoldingField({
 
 function Group({ title, caption, children }: { title: string; caption: string; children: React.ReactNode }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-[var(--ink)]/10 bg-[var(--panel)]">
-      <header className="flex items-baseline justify-between border-b border-[var(--ink)]/8 px-5 py-4">
-        <h3 className="text-sm font-semibold tracking-wide text-[var(--ink)]">{title}</h3>
+    <section className={`${financeCard} overflow-hidden`}>
+      <header className={`flex items-baseline justify-between border-b border-[var(--ink)]/8 ${financeCardHeaderPadding}`}>
+        <h3 className={financeModuleTitle}>{title}</h3>
         <span className="text-[11px] text-[var(--muted)]">{caption}</span>
       </header>
       <div className="divide-y divide-[var(--ink)]/[0.06]">{children}</div>
@@ -216,8 +226,8 @@ export function FinanceHoldingsForm({
   const { integer, decimal } = splitCnyMinor(total);
 
   return (
-    <form action={upsertFinanceHoldings} className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] xl:items-start">
-      <div className="space-y-6">
+    <form action={upsertFinanceHoldings} className={`grid ${financeModuleGap} xl:grid-cols-[minmax(0,1fr)_minmax(280px,360px)] xl:items-start`}>
+      <div className={financeStackGap}>
         {error ? (
           <p className="rounded-xl border border-[#b3644d]/30 bg-[#b3644d]/[0.08] px-4 py-3 text-sm text-[#8a4433]" role="alert">
             {error === "required"
@@ -234,7 +244,7 @@ export function FinanceHoldingsForm({
         ) : null}
 
         <Group title="海外" caption="美元 × 7.4 · 港币 × 0.94">
-          <div className="bg-[var(--ink)]/[0.02] px-5 pb-1 pt-3 text-[11px] font-semibold tracking-[0.2em] text-[var(--muted)]">
+          <div className="bg-[var(--ink)]/[0.02] px-6 pb-1 pt-3 text-[11px] font-semibold tracking-[0.2em] text-[var(--muted)]">
             SCHWAB
           </div>
           {schwabHoldingConfigs.filter((c) => c.account === "SCHWAB_OTHER").map((c) => (
@@ -248,7 +258,7 @@ export function FinanceHoldingsForm({
               priceFetchedAt={priceFetchedAt[c.account] ?? null}
             />
           ))}
-          <details className="border-t border-[var(--ink)]/[0.06] px-5 py-3.5">
+          <details className={`border-t border-[var(--ink)]/[0.06] ${financeRowPadding}`}>
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm text-[var(--ink)] [&::-webkit-details-marker]:hidden">
               <span className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#b3644d]" aria-hidden />
@@ -260,7 +270,7 @@ export function FinanceHoldingsForm({
                 <span aria-hidden>⌄</span>
               </span>
             </summary>
-            <div className="-mx-5 mt-3 divide-y divide-[var(--ink)]/[0.06] border-t border-[var(--ink)]/[0.06]">
+            <div className="-mx-6 mt-3 divide-y divide-[var(--ink)]/[0.06] border-t border-[var(--ink)]/[0.06]">
               {techDefenseHoldings.map((c) => (
                 <HoldingField
                   key={c.account}
@@ -274,7 +284,7 @@ export function FinanceHoldingsForm({
               ))}
             </div>
           </details>
-          <details className="border-t border-[var(--ink)]/[0.06] px-5 py-3.5">
+          <details className={`border-t border-[var(--ink)]/[0.06] ${financeRowPadding}`}>
             <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm text-[var(--ink)] [&::-webkit-details-marker]:hidden">
               <span className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#7f9c94]" aria-hidden />
@@ -286,7 +296,7 @@ export function FinanceHoldingsForm({
                 <span aria-hidden>⌄</span>
               </span>
             </summary>
-            <div className="-mx-5 mt-3 divide-y divide-[var(--ink)]/[0.06] border-t border-[var(--ink)]/[0.06]">
+            <div className="-mx-6 mt-3 divide-y divide-[var(--ink)]/[0.06] border-t border-[var(--ink)]/[0.06]">
               {consumerDefenseHoldings.map((c) => (
                 <HoldingField
                   key={c.account}
@@ -352,7 +362,7 @@ export function FinanceHoldingsForm({
         </Group>
       </div>
 
-      <aside className="space-y-5 rounded-2xl bg-[var(--ink)] p-6 text-[var(--panel)] lg:sticky lg:top-6">
+      <aside className={`${financeDarkCard} ${financeStackGap} ${financeCardPadding} lg:sticky lg:top-6`}>
         <div>
           <p className="text-[11px] tracking-[0.2em] opacity-60">预览合计 · 人民币</p>
           <p className="mt-2 text-3xl font-semibold tabular-nums">

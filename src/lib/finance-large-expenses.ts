@@ -1,0 +1,1 @@
+export const FINANCE_LARGE_EXPENSES_PAGE_SIZE = 5;

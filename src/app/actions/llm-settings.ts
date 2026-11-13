@@ -1,7 +1,12 @@
 "use server";
 
 import { getAppUser } from "@/lib/user";
-import { getLlmSettingsStatus, saveLlmSettings } from "@/lib/llm-config";
+import { getLlmSettingsStatus, listLlmModels, saveLlmSettings, type LlmReasoningEffort } from "@/lib/llm-config";
+
+export async function listLlmModelsAction(baseUrl: string, apiKey: string) {
+  const user = await getAppUser();
+  return listLlmModels(user.id, baseUrl, apiKey);
+}
 
 export async function getLlmSettingsAction() {
   const user = await getAppUser();
@@ -14,6 +19,7 @@ export async function saveLlmSettingsAction(formData: FormData) {
     apiKey: String(formData.get("apiKey") ?? ""),
     baseUrl: String(formData.get("baseUrl") ?? ""),
     model: String(formData.get("model") ?? ""),
+    reasoningEffort: String(formData.get("reasoningEffort") ?? "auto") as LlmReasoningEffort,
   };
   const clearStoredKey = String(formData.get("clearStoredKey") ?? "") === "true";
 

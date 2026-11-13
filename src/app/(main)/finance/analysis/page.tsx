@@ -21,8 +21,7 @@ export default async function FinanceAnalysisPage({
         <div className="space-y-6">
           <header className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-[11px] tracking-[0.2em] text-[var(--muted)]">FINANCE · ANALYSIS</p>
-              <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--ink)]">数据分析</h2>
+              <h2 className="text-2xl font-semibold tracking-tight text-[var(--ink)]">数据分析</h2>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">从市场信号和你的五层策略两个角度，逐步形成财商研究工作区。</p>
             </div>
             <div className="flex items-center gap-2">

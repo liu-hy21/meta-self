@@ -46,6 +46,15 @@ enum FinanceHoldingAccount {
   GOLD
 }
 
+enum FinanceLargeExpenseType {
+  TRAVEL
+  ITEM
+  OUTFIT
+  DATE
+  MEDICAL
+  DAILY
+}
+
 enum FinanceLiteracyKind {
   LEARNING
   DECISION
@@ -86,16 +95,17 @@ enum KitchenCleaningCadence {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  displayName  String?
-  timezone     String   @default("Asia/Shanghai")
-  llmApiKey    String?  @db.Text
-  llmBaseUrl   String?
-  llmModel     String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                 String   @id @default(cuid())
+  email              String   @unique
+  passwordHash       String
+  displayName        String?
+  timezone           String   @default("Asia/Shanghai")
+  llmApiKey          String?  @db.Text
+  llmBaseUrl         String?
+  llmModel           String?
+  llmReasoningEffort String?  @default("auto")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   bodyProfile           BodyProfile?
   bodyDiet              BodyDiet?
@@ -120,6 +130,7 @@ model User {
   financeInfoLogs       FinanceInfoLog[]
   financeHoldings       FinanceHolding[]
   financeHoldingLogs    FinanceHoldingLog[]
+  financeLargeExpenses  FinanceLargeExpense[]
   choreLogs             ChoreLog[]
   kitchenSeasonings     KitchenSeasoning[]
   kitchenVegetables     KitchenVegetable[]
@@ -495,16 +506,16 @@ model FinanceInfoLog {
 }
 
 model FinanceHolding {
-  id          String                @id @default(cuid())
-  userId      String
-  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  account     FinanceHoldingAccount
-  amountMinor Int                   @default(0)
-  quantityMinor Int?
-  priceUsdMinor Int?
-  priceCnyMinor Int?
+  id             String                @id @default(cuid())
+  userId         String
+  user           User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account        FinanceHoldingAccount
+  amountMinor    Int                   @default(0)
+  quantityMinor  Int?
+  priceUsdMinor  Int?
+  priceCnyMinor  Int?
   priceFetchedAt DateTime?
-  updatedAt   DateTime              @updatedAt
+  updatedAt      DateTime              @updatedAt
 
   @@unique([userId, account])
   @@index([userId])
@@ -521,6 +532,20 @@ model FinanceHoldingLog {
   createdAt           DateTime              @default(now())
 
   @@index([userId, createdAt])
+}
+
+model FinanceLargeExpense {
+  id          String                  @id @default(cuid())
+  userId      String
+  user        User                    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String                  @db.VarChar(120)
+  amountMinor Int
+  occurredOn  DateTime
+  type        FinanceLargeExpenseType @default(ITEM)
+  note        String?                 @db.Text
+  createdAt   DateTime                @default(now())
+
+  @@index([userId, occurredOn])
 }
 
 model PlayDistrict {
@@ -585,6 +610,7 @@ model LibraryVideo {
   userId     String
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   title      String
+  category   String   @default("理念")
   storedName String
   mime       String
   sizeBytes  Int
@@ -705,29 +731,29 @@ model ExpressionReview {
 }
 
 model RelationPerson {
-  id           String                @id @default(cuid())
-  userId       String
-  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  name         String
-  birthDate    DateTime?             @db.Date
-  zodiac       String?
-  mbti         String?
-  heightCm     Float?
-  weightKg     Float?
-  hometown     String?               @db.Text
-  familySituation String?            @db.Text
-  undergraduate String?              @db.Text
-  graduate     String?               @db.Text
-  major        String?               @db.Text
-  company      String?               @db.Text
-  jobTitle     String?               @db.Text
-  note         String?               @db.Text
-  createdAt    DateTime              @default(now())
-  kinds        RelationPersonKind[]
-  interactions RelationInteraction[]
-  archives     RelationChatArchive[]
-  aiReports    RelationAiReport[]
-  metricLedgers RelationMetricLedger[]
+  id              String                 @id @default(cuid())
+  userId          String
+  user            User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name            String
+  birthDate       DateTime?              @db.Date
+  zodiac          String?
+  mbti            String?
+  heightCm        Float?
+  weightKg        Float?
+  hometown        String?                @db.Text
+  familySituation String?                @db.Text
+  undergraduate   String?                @db.Text
+  graduate        String?                @db.Text
+  major           String?                @db.Text
+  company         String?                @db.Text
+  jobTitle        String?                @db.Text
+  note            String?                @db.Text
+  createdAt       DateTime               @default(now())
+  kinds           RelationPersonKind[]
+  interactions    RelationInteraction[]
+  archives        RelationChatArchive[]
+  aiReports       RelationAiReport[]
+  metricLedgers   RelationMetricLedger[]
 
   @@index([userId])
 }
@@ -756,23 +782,23 @@ model RelationInteraction {
 }
 
 model RelationChatArchive {
-  id           String         @id @default(cuid())
-  userId       String
-  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  personId     String
-  person       RelationPerson @relation(fields: [personId], references: [id], onDelete: Cascade)
-  sourceType   String
-  sourceKey    String
-  archivePath  String         @db.Text
-  periodStart  DateTime
-  periodEnd    DateTime
-  messageCount Int
-  importedAt   DateTime
-  analysisStatus String @default("PENDING")
-  metricsJson   Json?
-  analyzedAt    DateTime?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  id             String         @id @default(cuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  personId       String
+  person         RelationPerson @relation(fields: [personId], references: [id], onDelete: Cascade)
+  sourceType     String
+  sourceKey      String
+  archivePath    String         @db.Text
+  periodStart    DateTime
+  periodEnd      DateTime
+  messageCount   Int
+  importedAt     DateTime
+  analysisStatus String         @default("PENDING")
+  metricsJson    Json?
+  analyzedAt     DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 
   @@unique([userId, sourceType, sourceKey])
   @@index([userId, personId])

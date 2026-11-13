@@ -2,11 +2,35 @@ import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { Readable } from "node:stream";
 
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { libraryVideoFile } from "@/lib/library-video";
+import { isLibraryVideoCategory, libraryVideoFile } from "@/lib/library-video";
 import { getAppUserId } from "@/lib/user";
 
 export const dynamic = "force-dynamic";
+
+export async function POST(request: Request, context: { params: Promise<{ id: string }> }) {
+  const userId = await getAppUserId();
+  const { id } = await context.params;
+  const form = await request.formData();
+  const title = String(form.get("title") ?? "").trim().slice(0, 80);
+  const category = String(form.get("category") ?? "");
+  const page = Math.max(1, Number.parseInt(String(form.get("page") ?? "1"), 10) || 1);
+
+  if (!title || !isLibraryVideoCategory(category)) {
+    return Response.json({ error: "标题和分类不能为空。" }, { status: 400 });
+  }
+
+  const updated = await prisma.libraryVideo.updateMany({
+    where: { id, userId },
+    data: { title, category },
+  });
+  if (updated.count === 0) return new Response("找不到", { status: 404 });
+
+  revalidatePath("/library/video");
+  redirect(`/library/video?id=${id}&page=${page}`);
+}
 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
   const userId = await getAppUserId();

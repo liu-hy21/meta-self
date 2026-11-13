@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { prisma } from "@/lib/db";
-import { libraryVideoDir, libraryVideoLimit, libraryVideoMime } from "@/lib/library-video";
+import { isLibraryVideoCategory, libraryVideoDir, libraryVideoLimit, libraryVideoMime } from "@/lib/library-video";
 import { getAppUser } from "@/lib/user";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +22,8 @@ export async function POST(request: Request) {
   if (!kind) redirect("/library/video?error=type");
 
   const rawTitle = String(form.get("title") ?? "").trim();
+  const category = String(form.get("category") ?? "");
+  if (!isLibraryVideoCategory(category)) redirect("/library/video?error=category");
   const title = (rawTitle || file.name.replace(/\.[^.]+$/, "")).slice(0, 80);
   const storedName = `${randomUUID()}.${kind.ext}`;
   const dir = libraryVideoDir();
@@ -35,6 +37,7 @@ export async function POST(request: Request) {
       data: {
         userId: user.id,
         title,
+        category,
         storedName,
         mime: kind.mime,
         sizeBytes: file.size,

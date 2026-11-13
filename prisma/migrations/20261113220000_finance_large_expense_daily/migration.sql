@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE `FinanceLargeExpense`
+    MODIFY COLUMN `type` ENUM('TRAVEL', 'ITEM', 'OUTFIT', 'DATE', 'MEDICAL', 'DAILY') NOT NULL DEFAULT 'ITEM';

@@ -1,9 +1,11 @@
 "use client";
 
 import { useId, useState } from "react";
+import type { ReactNode } from "react";
 
 import { splitCnyMinor } from "@/lib/finance-holdings";
 import { FinanceSensitiveAmount, useFinanceVisibility } from "@/components/finance/finance-visibility";
+import { financeModuleTitle } from "@/components/finance/finance-ui-tokens";
 
 export type AssetTrendPoint = {
   date: string;
@@ -63,7 +65,15 @@ function monotonePath(xs: number[], ys: number[]) {
   return d;
 }
 
-export function FinanceAssetTrendChart({ points }: { points: AssetTrendPoint[] }) {
+export function FinanceAssetTrendChart({
+  points,
+  dark = false,
+  actions,
+}: {
+  points: AssetTrendPoint[];
+  dark?: boolean;
+  actions?: ReactNode;
+}) {
   const gradientId = useId();
   const [range, setRange] = useState<RangeKey>("all");
   const [hover, setHover] = useState<number | null>(null);
@@ -78,26 +88,32 @@ export function FinanceAssetTrendChart({ points }: { points: AssetTrendPoint[] }
   const header = (
     <div className="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <p className="text-[11px] tracking-[0.2em] text-[var(--muted)]">TREND</p>
-        <h3 className="mt-1 text-base font-semibold text-[var(--ink)]">资产走势</h3>
+        <h3 className={dark ? "text-base font-semibold text-[var(--panel)]" : financeModuleTitle}>资产走势</h3>
       </div>
-      <div className="inline-flex rounded-full bg-[var(--ink)]/[0.05] p-1 text-xs">
-        {RANGES.map((r) => (
-          <button
-            key={r.key}
-            type="button"
-            onClick={() => {
-              setRange(r.key);
-              setHover(null);
-            }}
-            aria-pressed={range === r.key}
-            className={`rounded-full px-3 py-1 transition-colors ${
-              range === r.key ? "bg-[var(--panel)] text-[var(--ink)] shadow-sm" : "text-[var(--muted)] hover:text-[var(--ink)]"
-            }`}
-          >
-            {r.label}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <div className={`inline-flex rounded-full p-1 text-xs ${dark ? "bg-[var(--panel)]/10" : "bg-[var(--ink)]/[0.05]"}`}>
+          {RANGES.map((r) => (
+            <button
+              key={r.key}
+              type="button"
+              onClick={() => {
+                setRange(r.key);
+                setHover(null);
+              }}
+              aria-pressed={range === r.key}
+              className={`rounded-full px-3 py-1 transition-colors ${
+                range === r.key
+                  ? "bg-[var(--panel)] text-[var(--ink)] shadow-sm"
+                  : dark
+                    ? "text-[var(--panel)]/70 hover:text-[var(--panel)]"
+                    : "text-[var(--muted)] hover:text-[var(--ink)]"
+              }`}
+            >
+              {r.label}
+            </button>
+          ))}
+        </div>
+        {actions}
       </div>
     </div>
   );
@@ -106,7 +122,11 @@ export function FinanceAssetTrendChart({ points }: { points: AssetTrendPoint[] }
     return (
       <div className="space-y-6">
         {header}
-        <div className="flex h-48 items-center justify-center rounded-xl border border-dashed border-[var(--ink)]/15 text-sm text-[var(--muted)]">
+      <div
+        className={`flex h-48 items-center justify-center rounded-xl border border-dashed text-sm ${
+          dark ? "border-[var(--panel)]/20 text-[var(--panel)]/65" : "border-[var(--ink)]/15 text-[var(--muted)]"
+        }`}
+      >
           完整保存一次资产后，这里会按日期记录快照并绘制走势
         </div>
       </div>
@@ -154,7 +174,7 @@ export function FinanceAssetTrendChart({ points }: { points: AssetTrendPoint[] }
       {header}
 
       <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-        <span className="text-sm text-[var(--muted)]">
+        <span className={`text-sm ${dark ? "text-[var(--panel)]/65" : "text-[var(--muted)]"}`}>
           {fullDate(data[0].date)} — {fullDate(data[data.length - 1].date)}
         </span>
         {data.length > 1 ? (
@@ -190,11 +210,16 @@ export function FinanceAssetTrendChart({ points }: { points: AssetTrendPoint[] }
                 x2={W - PAD.right}
                 y1={yAt(v)}
                 y2={yAt(v)}
-                stroke="var(--ink)"
+                stroke={dark ? "var(--panel)" : "var(--ink)"}
                 strokeOpacity={0.07}
                 strokeDasharray="3 5"
               />
-              <text x={W - PAD.right} y={yAt(v) - 6} textAnchor="end" className="fill-[var(--muted)] text-[10px]">
+              <text
+                x={W - PAD.right}
+                y={yAt(v) - 6}
+                textAnchor="end"
+                className={`${dark ? "fill-[var(--panel)]/65" : "fill-[var(--muted)]"} text-[10px]`}
+              >
                 {visible ? compactYuan(v) : "*****"}
               </text>
             </g>
@@ -212,7 +237,7 @@ export function FinanceAssetTrendChart({ points }: { points: AssetTrendPoint[] }
                 x={xs[i]}
                 y={H - 8}
                 textAnchor={data.length === 1 ? "middle" : i === 0 ? "start" : i === data.length - 1 ? "end" : "middle"}
-                className="fill-[var(--muted)] text-[10px]"
+                className={`${dark ? "fill-[var(--panel)]/65" : "fill-[var(--muted)]"} text-[10px]`}
               >
                 {axisDate(p.date)}
               </text>
@@ -228,7 +253,7 @@ export function FinanceAssetTrendChart({ points }: { points: AssetTrendPoint[] }
                 x2={xs[hover]}
                 y1={PAD.top}
                 y2={PAD.top + INNER_H}
-                stroke="var(--ink)"
+                stroke={dark ? "var(--panel)" : "var(--ink)"}
                 strokeOpacity={0.2}
               />
               <circle cx={xs[hover]} cy={ys[hover]} r={9} fill="#c29a5b" fillOpacity={0.2} />
@@ -253,9 +278,6 @@ export function FinanceAssetTrendChart({ points }: { points: AssetTrendPoint[] }
         ) : null}
       </div>
 
-      {data.length === 1 ? (
-        <p className="text-center text-xs text-[var(--muted)]">目前只有一天的快照，不同日期再保存几次就能连成曲线</p>
-      ) : null}
     </div>
   );
 }

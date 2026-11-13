@@ -12,6 +12,14 @@ import {
 
 export const FINANCE_EMERGENCY_CASH_FLOOR_CNY_MINOR = 5_000_000;
 
+export const FINANCE_LAYER_BOUNDS: Record<AssetAllocationKey, { lowerPct: number; upperPct: number }> = {
+  satellite: { lowerPct: 0, upperPct: 5 },
+  tech: { lowerPct: 0, upperPct: 20 },
+  hedge: { lowerPct: 10, upperPct: 20 },
+  broad: { lowerPct: 17.5, upperPct: 55 },
+  cash: { lowerPct: 0, upperPct: 70 },
+};
+
 type AbsoluteLimitDefinition = {
   key: FinanceAssetMetricRuleKey;
   label: string;
@@ -31,7 +39,8 @@ export type FinanceAssetMetricRuleKey =
   | "voo"
   | "qqq";
 
-export type FinanceAssetMetricStatus = "ok" | "over" | "unlimited";
+export type FinanceAssetMetricStatus = "ok" | "below" | "over";
+export type FinanceAssetMetricRuleStatus = "ok" | "over";
 
 export type FinanceAssetMetricRule = {
   key: FinanceAssetMetricRuleKey;
@@ -41,7 +50,7 @@ export type FinanceAssetMetricRule = {
   limitPct: number;
   currentCnyMinor: number;
   ratioPct: number | null;
-  status: FinanceAssetMetricStatus;
+  status: FinanceAssetMetricRuleStatus;
 };
 
 export type FinanceAssetMetrics = {
@@ -55,8 +64,10 @@ export type FinanceAssetMetrics = {
   slices: AssetAllocationSlice[];
   rules: FinanceAssetMetricRule[];
   layerStatus: Record<AssetAllocationKey, FinanceAssetMetricStatus>;
+  layerIssueCount: number;
   overLimitCount: number;
   checkedLimitCount: number;
+  checkedLayerCount: number;
 };
 
 const ABSOLUTE_LIMITS: AbsoluteLimitDefinition[] = [
@@ -135,9 +146,29 @@ function sumAccountsCnyMinor(amounts: Map<FinanceHoldingAccount, number>, accoun
   );
 }
 
-function getStatus(currentCnyMinor: number, strategyBaseCnyMinor: number, limitPct: number): FinanceAssetMetricStatus {
+function getAbsoluteLimitStatus(
+  currentCnyMinor: number,
+  strategyBaseCnyMinor: number,
+  limitPct: number,
+): FinanceAssetMetricRuleStatus {
   if (strategyBaseCnyMinor <= 0) return currentCnyMinor > 0 ? "over" : "ok";
   return currentCnyMinor > (strategyBaseCnyMinor * limitPct) / 100 ? "over" : "ok";
+}
+
+function getLayerStatus(
+  currentCnyMinor: number,
+  strategyBaseCnyMinor: number,
+  bounds: { lowerPct: number; upperPct: number },
+): FinanceAssetMetricStatus {
+  if (strategyBaseCnyMinor <= 0) {
+    if (currentCnyMinor > 0) return "over";
+    return bounds.lowerPct > 0 ? "below" : "ok";
+  }
+  const lowerCnyMinor = (strategyBaseCnyMinor * bounds.lowerPct) / 100;
+  const upperCnyMinor = (strategyBaseCnyMinor * bounds.upperPct) / 100;
+  if (currentCnyMinor < lowerCnyMinor) return "below";
+  if (currentCnyMinor > upperCnyMinor) return "over";
+  return "ok";
 }
 
 export function buildFinanceAssetMetrics(amounts: Map<FinanceHoldingAccount, number>): FinanceAssetMetrics {
@@ -161,15 +192,26 @@ export function buildFinanceAssetMetrics(amounts: Map<FinanceHoldingAccount, num
       limitPct: definition.limitPct,
       currentCnyMinor,
       ratioPct,
-      status: getStatus(currentCnyMinor, strategyBaseCnyMinor, definition.limitPct),
+      status: getAbsoluteLimitStatus(currentCnyMinor, strategyBaseCnyMinor, definition.limitPct),
     } satisfies FinanceAssetMetricRule;
   });
+  const slices = computeAllocationCnyMinor(amounts);
+  const layerAmounts = Object.fromEntries(slices.map((slice) => [slice.key, slice.cnyMinor])) as Record<AssetAllocationKey, number>;
+  layerAmounts.cash = configurableCashCnyMinor;
+  const cashFloorStatus = liquidCashCnyMinor < FINANCE_EMERGENCY_CASH_FLOOR_CNY_MINOR ? "below" : "ok";
   const layerStatus = Object.fromEntries(
-    layerKeys.map((key) => [
-      key,
-      key === "cash" ? "unlimited" : rules.some((rule) => rule.layerKey === key && rule.status === "over") ? "over" : "ok",
-    ]),
+    layerKeys.map((key) => {
+      const rangeStatus = getLayerStatus(layerAmounts[key], strategyBaseCnyMinor, FINANCE_LAYER_BOUNDS[key]);
+      const status =
+        key === "cash" && cashFloorStatus === "below"
+          ? "below"
+          : rangeStatus === "ok" && rules.some((rule) => rule.layerKey === key && rule.status === "over")
+            ? "over"
+            : rangeStatus;
+      return [key, status];
+    }),
   ) as Record<AssetAllocationKey, FinanceAssetMetricStatus>;
+  const layerIssueCount = Object.values(layerStatus).filter((status) => status !== "ok").length;
 
   return {
     totalCnyMinor,
@@ -177,12 +219,14 @@ export function buildFinanceAssetMetrics(amounts: Map<FinanceHoldingAccount, num
     liquidCashCnyMinor,
     configurableCashCnyMinor,
     cashFloorCnyMinor: FINANCE_EMERGENCY_CASH_FLOOR_CNY_MINOR,
-    cashFloorStatus: liquidCashCnyMinor < FINANCE_EMERGENCY_CASH_FLOOR_CNY_MINOR ? "below" : "ok",
+    cashFloorStatus,
     cashShortfallCnyMinor,
-    slices: computeAllocationCnyMinor(amounts),
+    slices,
     rules,
     layerStatus,
+    layerIssueCount,
     overLimitCount: rules.filter((rule) => rule.status === "over").length,
     checkedLimitCount: rules.length,
+    checkedLayerCount: layerKeys.length,
   };
 }

@@ -1,9 +1,11 @@
 import Link from "next/link";
-import type { FinanceHoldingAccount, FinanceHoldingLog } from "@prisma/client";
+import type { FinanceHoldingAccount, FinanceHoldingLog, FinanceLargeExpense } from "@prisma/client";
 
 import { FinanceAssetAllocationPie } from "@/components/finance/finance-asset-allocation-pie";
 import { FinanceAssetMetricsDashboard } from "@/components/finance/finance-asset-metrics-dashboard";
 import { FinanceAssetTrendChart, type AssetTrendPoint } from "@/components/finance/finance-asset-trend-chart";
+import { FinanceLargeExpenseAiCard } from "@/components/finance/finance-large-expense-ai-card";
+import { FinanceLargeExpensesCard } from "@/components/finance/finance-large-expenses-card";
 import { FinanceHoldingsForm } from "@/components/finance/finance-holdings-form";
 import {
   FinanceSensitiveAmount,
@@ -32,6 +34,14 @@ import {
   type HoldingConfig,
 } from "@/lib/finance-holdings";
 import { buildFinanceAssetMetrics } from "@/lib/finance-asset-metrics";
+import {
+  financeCard,
+  financeCardHeaderPadding,
+  financeCardPadding,
+  financeModuleTitle,
+  financeRowPadding,
+  financeStackGap,
+} from "@/components/finance/finance-ui-tokens";
 
 type HoldingRow = {
   account: FinanceHoldingAccount;
@@ -41,9 +51,6 @@ type HoldingRow = {
   priceCnyMinor: number | null;
   priceFetchedAt: Date | null;
 };
-
-const card = "rounded-2xl border border-[var(--ink)]/10 bg-[var(--panel)] shadow-[0_1px_2px_rgba(28,25,23,0.04)]";
-const eyebrow = "text-[11px] tracking-[0.2em] text-[var(--muted)]";
 
 function Yuan({ minor, className = "" }: { minor: number; className?: string }) {
   const { integer, decimal } = splitCnyMinor(minor);
@@ -86,7 +93,7 @@ function HoldingLine({
     ? priceFetchedAt.toLocaleDateString("zh-CN", { timeZone: "Asia/Shanghai", month: "2-digit", day: "2-digit" })
     : null;
   return (
-    <li className={`group px-5 py-3.5 transition-colors hover:bg-[var(--ink)]/[0.025] ${indent ? "pl-9" : ""}`}>
+    <li className={`group ${financeRowPadding} transition-colors hover:bg-[var(--ink)]/[0.025] ${indent ? "pl-10" : ""}`}>
       <div className="flex items-center justify-between gap-4">
         <div className="min-w-0">
           <p className="flex items-center gap-2 text-sm text-[var(--ink)]">
@@ -97,7 +104,7 @@ function HoldingLine({
             {marketPriced && quantityMinor != null
               ? `${(quantityMinor / 100).toFixed(2)} ${quantityUnit} · ${marketPriceMinor != null ? `价格 ${priceSymbol}${(marketPriceMinor / 100).toFixed(2)}${priceDate ? ` · ${priceDate}` : ""}` : "等待价格"}`
               : allocation.label === config.label
-                ? "指数 ETF"
+                ? "指数基金"
                 : allocation.label}
           </p>
         </div>
@@ -127,17 +134,21 @@ function RegionCard({
   caption,
   subtotalMinor,
   children,
+  embedded = false,
+  className = "",
 }: {
   title: string;
   caption: string;
   subtotalMinor: number;
   children: React.ReactNode;
+  embedded?: boolean;
+  className?: string;
 }) {
   return (
-    <section className={`${card} overflow-hidden`}>
-      <header className="flex items-end justify-between gap-3 border-b border-[var(--ink)]/[0.07] px-5 py-4">
+    <section className={`${embedded ? "" : financeCard} overflow-hidden ${className}`}>
+      <header className={`flex items-end justify-between gap-3 border-b border-[var(--ink)]/[0.07] ${financeCardHeaderPadding}`}>
         <div>
-          <h3 className="text-sm font-semibold tracking-wide text-[var(--ink)]">{title}</h3>
+          <h3 className={financeModuleTitle}>{title}</h3>
           <p className="mt-0.5 text-[11px] text-[var(--muted)]">{caption}</p>
         </div>
         <Yuan minor={subtotalMinor} className="text-base font-semibold text-[var(--ink)]" />
@@ -218,11 +229,10 @@ function ChangeLog({ logs }: { logs: FinanceHoldingLog[] }) {
   const prevTotal = (index: number) => groups[index + 1]?.totalCnyMinor ?? null;
 
   return (
-    <details className={`${card} group/history p-6`} aria-label="变更记录">
+    <details className={`${financeCard} group/history ${financeCardPadding}`} aria-label="变更记录">
       <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
         <div>
-          <p className={eyebrow}>HISTORY</p>
-          <h3 className="mt-1 text-base font-semibold text-[var(--ink)]">变更记录</h3>
+          <h3 className={financeModuleTitle}>变更记录</h3>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-xs text-[var(--muted)]">共 {groups.length} 次保存</span>
@@ -259,6 +269,109 @@ function ChangeLog({ logs }: { logs: FinanceHoldingLog[] }) {
   );
 }
 
+function FinanceRegionBlocks({
+  amounts,
+  holdingByAccount,
+  marketPrices,
+  marketPriceCurrencies,
+  totalCnyMinor,
+  techDefenseHoldings,
+  techDefenseCny,
+  consumerDefenseHoldings,
+  consumerDefenseCny,
+  overseasCny,
+  domesticCny,
+  schwabUsd,
+}: {
+  amounts: Map<FinanceHoldingAccount, number>;
+  holdingByAccount: Map<FinanceHoldingAccount, HoldingRow>;
+  marketPrices: Record<string, number | null>;
+  marketPriceCurrencies: Record<string, "USD" | "CNY" | null>;
+  totalCnyMinor: number;
+  techDefenseHoldings: HoldingConfig[];
+  techDefenseCny: number;
+  consumerDefenseHoldings: HoldingConfig[];
+  consumerDefenseCny: number;
+  overseasCny: number;
+  domesticCny: number;
+  schwabUsd: number;
+}) {
+  const holding = (config: HoldingConfig, indent = false) => (
+    <HoldingLine
+      key={config.account}
+      config={config}
+      amountMinor={amounts.get(config.account) ?? 0}
+      totalCnyMinor={totalCnyMinor}
+      quantityMinor={holdingByAccount.get(config.account)?.quantityMinor ?? null}
+      marketPriceMinor={marketPrices[config.account] ?? null}
+      marketPriceCurrency={marketPriceCurrencies[config.account] ?? null}
+      priceFetchedAt={holdingByAccount.get(config.account)?.priceFetchedAt ?? null}
+      indent={indent}
+    />
+  );
+
+  return (
+    <div className="grid border-t border-[var(--ink)]/[0.1] lg:grid-cols-2">
+      <RegionCard
+        title="海外"
+        caption={`美元 × ${USD_TO_CNY} · 港币 × ${HKD_TO_CNY}`}
+        subtotalMinor={overseasCny}
+        embedded
+        className="lg:border-r lg:border-[var(--ink)]/[0.1]"
+      >
+        <li className={`flex items-center justify-between bg-[var(--ink)]/[0.02] ${financeCardHeaderPadding}`}>
+          <span className="text-xs font-semibold tracking-[0.2em] text-[var(--ink)]">SCHWAB</span>
+          <FinanceSensitiveAmount className="text-xs tabular-nums text-[var(--muted)]">
+            {formatNativeAmount(schwabUsd, schwabHoldingConfigs[0])}
+          </FinanceSensitiveAmount>
+        </li>
+        {schwabHoldingConfigs.filter((c) => c.account === "SCHWAB_OTHER").map((c) => holding(c, true))}
+        <li className={`border-t border-[var(--ink)]/[0.06] ${financeRowPadding} pl-10`}>
+          <details>
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm text-[var(--ink)] [&::-webkit-details-marker]:hidden">
+              <span className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#b3644d]" aria-hidden />
+                科技防守层
+              </span>
+              <span className="text-xs tabular-nums text-[var(--muted)]">
+                {techDefenseHoldings.length} 项 · <Yuan minor={techDefenseCny} /> <span aria-hidden>⌄</span>
+              </span>
+            </summary>
+            <ul className="-mx-6 mt-3 divide-y divide-[var(--ink)]/[0.05] border-t border-[var(--ink)]/[0.06]">
+              {techDefenseHoldings.map((c) => holding(c, true))}
+            </ul>
+          </details>
+        </li>
+        <li className={`border-t border-[var(--ink)]/[0.06] ${financeRowPadding} pl-10`}>
+          <details>
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm text-[var(--ink)] [&::-webkit-details-marker]:hidden">
+              <span className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#7f9c94]" aria-hidden />
+                消费防守层
+              </span>
+              <span className="text-xs tabular-nums text-[var(--muted)]">
+                {consumerDefenseHoldings.length} 项 · <Yuan minor={consumerDefenseCny} /> <span aria-hidden>⌄</span>
+              </span>
+            </summary>
+            <ul className="-mx-6 mt-3 divide-y divide-[var(--ink)]/[0.05] border-t border-[var(--ink)]/[0.06]">
+              {consumerDefenseHoldings.map((c) => holding(c, true))}
+            </ul>
+          </details>
+        </li>
+        {schwabHoldingConfigs
+          .filter((c) => c.account === "SCHWAB_QQQ" || c.account === "SCHWAB_VOO")
+          .map((c) => holding(c, true))}
+        {schwabHoldingConfigs.filter((c) => c.account === "SCHWAB_CASH").map((c) => holding(c, true))}
+        {overseasHoldings.map((c) => holding(c))}
+      </RegionCard>
+
+      <RegionCard title="国内" caption="人民币" subtotalMinor={domesticCny} embedded>
+        {domesticHoldings.map((c) => holding(c))}
+      </RegionCard>
+    </div>
+  );
+}
+
 export function FinanceAssetsSection({
   holdings,
   logs,
@@ -267,6 +380,15 @@ export function FinanceAssetsSection({
   assetsError,
   assetsNotice,
   assetsNoticeAsset,
+  largeExpenses,
+  largeExpenseTotal,
+  largeExpensePage,
+  largeExpensePageCount,
+  largeExpenseError,
+  yearOptions,
+  selectedYear,
+  selectedYearTotalMinor,
+  selectedYearTypeTotals,
 }: {
   holdings: HoldingRow[];
   logs: FinanceHoldingLog[];
@@ -275,6 +397,15 @@ export function FinanceAssetsSection({
   assetsError?: "required" | "invalid" | "price-unavailable";
   assetsNotice?: "stale-price";
   assetsNoticeAsset?: string;
+  largeExpenses: FinanceLargeExpense[];
+  largeExpenseTotal: number;
+  largeExpensePage: number;
+  largeExpensePageCount: number;
+  largeExpenseError?: "required";
+  yearOptions: Array<{ year: number; totalMinor: number }>;
+  selectedYear: number | null;
+  selectedYearTotalMinor: number | null;
+  selectedYearTypeTotals: Array<{ type: FinanceLargeExpense["type"]; amountMinor: number }>;
 }) {
   const amounts = new Map<FinanceHoldingAccount, number>(financeHoldingConfigs.map((c) => [c.account, 0]));
   for (const h of holdings) amounts.set(h.account, h.amountMinor);
@@ -300,11 +431,10 @@ export function FinanceAssetsSection({
   if (editing) {
     return (
       <FinanceVisibilityProvider>
-        <div className="space-y-6">
+        <div className={financeStackGap}>
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className={eyebrow}>UPDATE SNAPSHOT</p>
-              <h2 className="mt-1 text-xl font-semibold text-[var(--ink)]">更新资产</h2>
+              <h2 className={financeModuleTitle}>更新资产</h2>
               <p className="mt-1 text-sm text-[var(--muted)]">按当前实际余额填写全部账户，保存后生成今日快照。</p>
             </div>
             <FinanceVisibilityToggle className="border-[var(--ink)]/15 text-[var(--ink)] hover:bg-[var(--ink)]/[0.05]" />
@@ -337,237 +467,81 @@ export function FinanceAssetsSection({
   const consumerDefenseHoldings = schwabHoldingConfigs.filter(isConsumerDefenseHolding);
   const consumerDefenseCny = sum(consumerDefenseHoldings);
 
-  const sortedPoints = [...trendPoints].sort((a, b) => a.date.localeCompare(b.date));
-  const previous = sortedPoints.length >= 2 ? sortedPoints[sortedPoints.length - 2] : null;
-  const latest = sortedPoints[sortedPoints.length - 1] ?? null;
-  const delta = previous ? totalCnyMinor - previous.totalCnyMinor : null;
-  const deltaPct = previous && previous.totalCnyMinor > 0 && delta != null ? (delta / previous.totalCnyMinor) * 100 : null;
-  const { integer, decimal } = splitCnyMinor(totalCnyMinor);
-
   return (
     <FinanceVisibilityProvider>
-      <div className="space-y-6">
+      <div className={financeStackGap}>
       {assetsNotice === "stale-price" ? (
         <p className="rounded-xl border border-[#c29a5b]/30 bg-[#c29a5b]/[0.1] px-4 py-3 text-sm text-[#765a2d]" role="status">
           {assetsNoticeAsset ?? "QQQ / VOO"} 暂时沿用了上次缓存价格。
         </p>
       ) : null}
-      <section className={`${card} grid overflow-hidden xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,1fr)]`}>
-        <div className="flex flex-col justify-between gap-8 bg-[var(--ink)] p-7 text-[var(--panel)] sm:p-8">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-[11px] tracking-[0.25em] opacity-60">NET ASSETS · CNY</p>
-              <p className="mt-1 text-sm opacity-80">总资产</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <FinanceVisibilityToggle className="border-[var(--panel)]/30 text-[var(--panel)] hover:bg-[var(--panel)]/10" />
+      <section className={`${financeCard} overflow-hidden`}>
+        <div className="grid lg:grid-cols-2">
+          <div className={`bg-[var(--ink)] ${financeCardPadding} text-[var(--panel)]`}>
+            <FinanceAssetTrendChart
+              points={trendPoints}
+              dark
+              actions={
+                <div className="flex items-center gap-2">
+                  <FinanceVisibilityToggle className="border-[var(--panel)]/30 text-[var(--panel)] hover:bg-[var(--panel)]/10" />
+                  <Link
+                    href="/finance/profile?edit=1"
+                    className="inline-flex h-9 items-center gap-1.5 rounded-full bg-[var(--panel)] px-4 text-sm font-medium text-[var(--ink)] transition-transform hover:-translate-y-px"
+                  >
+                    更新资产
+                  </Link>
+                </div>
+              }
+            />
+          </div>
+
+          <div className={financeCardPadding}>
+            <div className="mb-6 flex items-center justify-between gap-3">
+              <h3 className={financeModuleTitle}>资产结构</h3>
               <Link
-                href="/finance/profile?edit=1"
-                className="inline-flex h-9 items-center gap-1.5 rounded-full bg-[var(--panel)] px-4 text-sm font-medium text-[var(--ink)] transition-transform hover:-translate-y-px"
+                href="/finance/analysis?view=signals"
+                className="inline-flex h-8 items-center border border-[var(--ink)]/20 px-2.5 text-xs text-[var(--ink)] transition-colors hover:border-[var(--ink)] hover:bg-[var(--gold)]"
               >
-                更新资产
+                数据分析
               </Link>
             </div>
+            <FinanceAssetAllocationPie slices={slices} sliceStates={assetMetrics.layerStatus} showStatus />
           </div>
-
-          <div>
-            <p className="text-4xl font-semibold tracking-tight tabular-nums sm:text-5xl">
-              <FinanceSensitiveAmount>
-              ¥{integer}
-              <span className="text-2xl opacity-40 sm:text-3xl">.{decimal}</span>
-              </FinanceSensitiveAmount>
-            </p>
-            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-              {delta != null && previous ? (
-                <span
-                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium tabular-nums ${
-                    delta >= 0 ? "bg-[#9fc7b3]/15 text-[#9fc7b3]" : "bg-[#e3a593]/15 text-[#e3a593]"
-                  }`}
-                >
-                  <FinanceSensitiveAmount>
-                    {delta >= 0 ? "▲" : "▼"} ¥{splitCnyMinor(Math.abs(delta)).integer}
-                  </FinanceSensitiveAmount>
-                  {deltaPct != null ? ` · ${Math.abs(deltaPct).toFixed(2)}%` : ""}
-                </span>
-              ) : null}
-              <span className="opacity-50">
-                {previous ? `较 ${previous.date.slice(5, 10).replace("-", "/")} 快照` : "暂无对比快照"}
-                {latest ? ` · 最近更新 ${latest.date.slice(0, 10)}` : ""}
-              </span>
-            </div>
-          </div>
-
-          <dl className="grid grid-cols-2 gap-6 border-t border-white/10 pt-6">
-            <div>
-              <dt className="text-xs opacity-50">海外</dt>
-              <dd className="mt-1 text-lg font-medium tabular-nums">
-                <FinanceSensitiveAmount>¥{splitCnyMinor(overseasCny).integer}</FinanceSensitiveAmount>
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs opacity-50">国内</dt>
-              <dd className="mt-1 text-lg font-medium tabular-nums">
-                <FinanceSensitiveAmount>¥{splitCnyMinor(domesticCny).integer}</FinanceSensitiveAmount>
-              </dd>
-            </div>
-          </dl>
         </div>
-
-        <div className="p-7 sm:p-8">
-          <p className={eyebrow}>ALLOCATION</p>
-          <div className="mb-6 mt-1 flex items-center justify-between gap-3">
-            <h3 className="text-base font-semibold text-[var(--ink)]">资产结构</h3>
-            <Link
-              href="/finance/analysis?view=signals"
-              className="inline-flex h-8 items-center border border-[var(--ink)]/20 px-2.5 text-xs text-[var(--ink)] transition-colors hover:border-[var(--ink)] hover:bg-[var(--gold)]"
-            >
-              数据分析
-            </Link>
-          </div>
-          <FinanceAssetAllocationPie slices={slices} />
-        </div>
+        <FinanceRegionBlocks
+          amounts={amounts}
+          holdingByAccount={holdingByAccount}
+          marketPrices={marketPrices}
+          marketPriceCurrencies={marketPriceCurrencies}
+          totalCnyMinor={totalCnyMinor}
+          techDefenseHoldings={techDefenseHoldings}
+          techDefenseCny={techDefenseCny}
+          consumerDefenseHoldings={consumerDefenseHoldings}
+          consumerDefenseCny={consumerDefenseCny}
+          overseasCny={overseasCny}
+          domesticCny={domesticCny}
+          schwabUsd={schwabUsd}
+        />
       </section>
 
-      <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
-        <section className={`${card} p-6 sm:p-7`}>
-          <FinanceAssetTrendChart points={trendPoints} />
-        </section>
-        <FinanceAssetMetricsDashboard metrics={assetMetrics} />
-      </div>
+      <FinanceAssetMetricsDashboard />
 
-      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
-        <RegionCard title="海外" caption={`美元 × ${USD_TO_CNY} · 港币 × ${HKD_TO_CNY}`} subtotalMinor={overseasCny}>
-          <li className="flex items-center justify-between bg-[var(--ink)]/[0.02] px-5 py-3">
-            <span className="text-xs font-semibold tracking-[0.2em] text-[var(--ink)]">SCHWAB</span>
-            <FinanceSensitiveAmount className="text-xs tabular-nums text-[var(--muted)]">
-              {formatNativeAmount(schwabUsd, schwabHoldingConfigs[0])}
-            </FinanceSensitiveAmount>
-          </li>
-          {schwabHoldingConfigs.filter((c) => c.account === "SCHWAB_OTHER").map((c) => (
-            <HoldingLine
-              key={c.account}
-              config={c}
-              amountMinor={amounts.get(c.account) ?? 0}
-              totalCnyMinor={totalCnyMinor}
-              quantityMinor={holdingByAccount.get(c.account)?.quantityMinor ?? null}
-              marketPriceMinor={marketPrices[c.account] ?? null}
-              marketPriceCurrency={marketPriceCurrencies[c.account] ?? null}
-              priceFetchedAt={holdingByAccount.get(c.account)?.priceFetchedAt ?? null}
-              indent
-            />
-          ))}
-          <li className="border-t border-[var(--ink)]/[0.06] py-3.5 pl-9 pr-5">
-            <details>
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm text-[var(--ink)] [&::-webkit-details-marker]:hidden">
-                <span className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#b3644d]" aria-hidden />
-                  科技防守层
-                </span>
-                <span className="text-xs tabular-nums text-[var(--muted)]">
-                  {techDefenseHoldings.length} 项 · <Yuan minor={techDefenseCny} /> <span aria-hidden>⌄</span>
-                </span>
-              </summary>
-              <ul className="-mx-5 mt-3 divide-y divide-[var(--ink)]/[0.05] border-t border-[var(--ink)]/[0.06]">
-                {techDefenseHoldings.map((c) => (
-                  <HoldingLine
-                    key={c.account}
-                    config={c}
-                    amountMinor={amounts.get(c.account) ?? 0}
-                    totalCnyMinor={totalCnyMinor}
-                    quantityMinor={holdingByAccount.get(c.account)?.quantityMinor ?? null}
-                    marketPriceMinor={marketPrices[c.account] ?? null}
-                    marketPriceCurrency={marketPriceCurrencies[c.account] ?? null}
-                    priceFetchedAt={holdingByAccount.get(c.account)?.priceFetchedAt ?? null}
-                    indent
-                  />
-                ))}
-              </ul>
-            </details>
-          </li>
-          <li className="border-t border-[var(--ink)]/[0.06] py-3.5 pl-9 pr-5">
-            <details>
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm text-[var(--ink)] [&::-webkit-details-marker]:hidden">
-                <span className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#7f9c94]" aria-hidden />
-                  消费防守层
-                </span>
-                <span className="text-xs tabular-nums text-[var(--muted)]">
-                  {consumerDefenseHoldings.length} 项 · <Yuan minor={consumerDefenseCny} /> <span aria-hidden>⌄</span>
-                </span>
-              </summary>
-              <ul className="-mx-5 mt-3 divide-y divide-[var(--ink)]/[0.05] border-t border-[var(--ink)]/[0.06]">
-                {consumerDefenseHoldings.map((c) => (
-                  <HoldingLine
-                    key={c.account}
-                    config={c}
-                    amountMinor={amounts.get(c.account) ?? 0}
-                    totalCnyMinor={totalCnyMinor}
-                    quantityMinor={holdingByAccount.get(c.account)?.quantityMinor ?? null}
-                    marketPriceMinor={marketPrices[c.account] ?? null}
-                    marketPriceCurrency={marketPriceCurrencies[c.account] ?? null}
-                    priceFetchedAt={holdingByAccount.get(c.account)?.priceFetchedAt ?? null}
-                    indent
-                  />
-                ))}
-              </ul>
-            </details>
-          </li>
-          {schwabHoldingConfigs
-            .filter((c) => c.account === "SCHWAB_QQQ" || c.account === "SCHWAB_VOO")
-            .map((c) => (
-              <HoldingLine
-                key={c.account}
-                config={c}
-                amountMinor={amounts.get(c.account) ?? 0}
-                totalCnyMinor={totalCnyMinor}
-                quantityMinor={holdingByAccount.get(c.account)?.quantityMinor ?? null}
-                marketPriceMinor={marketPrices[c.account] ?? null}
-                marketPriceCurrency={marketPriceCurrencies[c.account] ?? null}
-                priceFetchedAt={holdingByAccount.get(c.account)?.priceFetchedAt ?? null}
-                indent
-              />
-            ))}
-          {schwabHoldingConfigs.filter((c) => c.account === "SCHWAB_CASH").map((c) => (
-            <HoldingLine
-              key={c.account}
-              config={c}
-              amountMinor={amounts.get(c.account) ?? 0}
-              totalCnyMinor={totalCnyMinor}
-              quantityMinor={holdingByAccount.get(c.account)?.quantityMinor ?? null}
-              marketPriceMinor={marketPrices[c.account] ?? null}
-              marketPriceCurrency={marketPriceCurrencies[c.account] ?? null}
-              priceFetchedAt={holdingByAccount.get(c.account)?.priceFetchedAt ?? null}
-              indent
-            />
-          ))}
-          {overseasHoldings.map((c) => (
-            <HoldingLine
-              key={c.account}
-              config={c}
-              amountMinor={amounts.get(c.account) ?? 0}
-              totalCnyMinor={totalCnyMinor}
-              quantityMinor={holdingByAccount.get(c.account)?.quantityMinor ?? null}
-              marketPriceMinor={marketPrices[c.account] ?? null}
-              marketPriceCurrency={marketPriceCurrencies[c.account] ?? null}
-              priceFetchedAt={holdingByAccount.get(c.account)?.priceFetchedAt ?? null}
-            />
-          ))}
-        </RegionCard>
-
-        <RegionCard title="国内" caption="人民币" subtotalMinor={domesticCny}>
-          {domesticHoldings.map((c) => (
-            <HoldingLine
-              key={c.account}
-              config={c}
-              amountMinor={amounts.get(c.account) ?? 0}
-              totalCnyMinor={totalCnyMinor}
-              quantityMinor={holdingByAccount.get(c.account)?.quantityMinor ?? null}
-              marketPriceMinor={marketPrices[c.account] ?? null}
-              marketPriceCurrency={marketPriceCurrencies[c.account] ?? null}
-              priceFetchedAt={holdingByAccount.get(c.account)?.priceFetchedAt ?? null}
-            />
-          ))}
-        </RegionCard>
+      <div className="grid gap-6 xl:grid-cols-2">
+        <FinanceLargeExpensesCard
+          expenses={largeExpenses}
+          total={largeExpenseTotal}
+          page={largeExpensePage}
+          pageCount={largeExpensePageCount}
+          error={largeExpenseError}
+          yearOptions={yearOptions}
+          selectedYear={selectedYear}
+          selectedYearTotalMinor={selectedYearTotalMinor}
+          selectedYearTypeTotals={selectedYearTypeTotals}
+        />
+        <FinanceLargeExpenseAiCard
+          key={selectedYear == null ? "all" : String(selectedYear)}
+          selectedYear={selectedYear}
+        />
       </div>
 
       <ChangeLog logs={logs} />

@@ -2,14 +2,21 @@
 
 import { useState } from "react";
 
-import { getLlmSettingsAction, saveLlmSettingsAction } from "@/app/actions/llm-settings";
+import { getLlmSettingsAction, listLlmModelsAction, saveLlmSettingsAction } from "@/app/actions/llm-settings";
+import type { LlmReasoningEffort } from "@/lib/llm-config";
 
 type LlmSettingsStatus = {
   configured: boolean;
   apiKeyMasked: string;
   baseUrl: string;
   model: string;
+  reasoningEffort: LlmReasoningEffort;
   source: "database" | "environment" | "none";
+};
+
+type LlmSettingsNotice = {
+  kind: "success" | "error";
+  text: string;
 };
 
 function GearIcon() {
@@ -26,23 +33,42 @@ export function LlmSettings() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<LlmSettingsStatus | null>(null);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
-  const [baseUrl, setBaseUrl] = useState("https://api.openai.com/v1");
-  const [model, setModel] = useState("gpt-4o-mini");
+  const [notice, setNotice] = useState<LlmSettingsNotice | null>(null);
+  const [baseUrl, setBaseUrl] = useState("https://api.deepseek.com/v1");
+  const [model, setModel] = useState("deepseek-flash");
+  const [reasoningEffort, setReasoningEffort] = useState<LlmReasoningEffort>("auto");
+  const [modelOptions, setModelOptions] = useState<string[]>([]);
+  const [loadingModels, setLoadingModels] = useState(false);
+  const [apiKey, setApiKey] = useState("");
+
+  async function refreshModels(url = baseUrl, key = apiKey) {
+    setLoadingModels(true);
+    try {
+      setModelOptions(await listLlmModelsAction(url, key));
+      setNotice(null);
+    } catch (cause) {
+      setModelOptions([]);
+      setNotice({
+        kind: "error",
+        text: cause instanceof Error ? cause.message : "获取模型失败，请手动填写模型名。",
+      });
+    } finally { setLoadingModels(false); }
+  }
 
   async function openSettings() {
     setOpen(true);
     setLoading(true);
-    setMessage("");
-    setError("");
+    setNotice(null);
     try {
       const next = await getLlmSettingsAction();
       setStatus(next);
       setBaseUrl(next.baseUrl);
       setModel(next.model);
+      setReasoningEffort(next.reasoningEffort);
+      setModelOptions([]);
+      if (next.configured) void refreshModels(next.baseUrl, "");
     } catch {
-      setError("读取配置失败，请稍后重试。");
+      setNotice({ kind: "error", text: "读取配置失败，请稍后重试。" });
     } finally {
       setLoading(false);
     }
@@ -50,45 +76,47 @@ export function LlmSettings() {
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (saving) return;
     setSaving(true);
-    setMessage("");
-    setError("");
+    setNotice(null);
     const formData = new FormData(event.currentTarget);
     formData.set("baseUrl", baseUrl);
     formData.set("model", model);
+    formData.set("reasoningEffort", reasoningEffort);
     try {
       const result = await saveLlmSettingsAction(formData);
       if (!result.ok) {
-        setError(result.message);
         setStatus(result.status);
+        setNotice({ kind: "error", text: result.message });
         return;
       }
       setStatus(result.status);
-      setMessage(result.message);
-      const keyInput = event.currentTarget.elements.namedItem("apiKey");
-      if (keyInput instanceof HTMLInputElement) keyInput.value = "";
+      setNotice({ kind: "success", text: result.message });
+      setApiKey("");
     } catch {
-      setError("保存失败，请稍后重试。");
+      setNotice({ kind: "error", text: "保存失败，请稍后重试。" });
     } finally {
       setSaving(false);
     }
   }
 
   async function clearStoredKey() {
+    if (saving) return;
     setSaving(true);
-    setMessage("");
-    setError("");
+    setNotice(null);
     const formData = new FormData();
     formData.set("baseUrl", baseUrl);
     formData.set("model", model);
+    formData.set("reasoningEffort", reasoningEffort);
     formData.set("clearStoredKey", "true");
     try {
       const result = await saveLlmSettingsAction(formData);
       setStatus(result.status);
-      if (result.ok) setMessage("已移除本地保存的 API Key。" );
-      else setError(result.message);
+      setNotice(result.ok
+        ? { kind: "success", text: "已移除本地保存的 API Key。" }
+        : { kind: "error", text: result.message });
     } catch {
-      setError("移除失败，请稍后重试。");
+      setNotice({ kind: "error", text: "移除失败，请稍后重试。" });
     } finally {
       setSaving(false);
     }
@@ -125,19 +153,43 @@ export function LlmSettings() {
 
                 <label>
                   API Key
-                  <input name="apiKey" type="password" autoComplete="new-password" placeholder={status?.configured ? "留空则保持当前 Key" : "sk-…"} />
+                  <input name="apiKey" type="password" autoComplete="new-password" value={apiKey} onChange={(event) => setApiKey(event.target.value)} placeholder={status?.configured ? "留空则保持当前 Key" : "sk-…"} />
                 </label>
                 <label>
-                  Base URL
-                  <input name="baseUrl" value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} placeholder="https://api.openai.com/v1" />
+                  DeepSeek API 地址
+                  <input name="baseUrl" value={baseUrl} onChange={(event) => setBaseUrl(event.target.value)} placeholder="https://api.deepseek.com/v1" />
                 </label>
+                <div className="llm-settings-model-heading"><span>模型选择</span><button type="button" disabled={loadingModels} onClick={() => void refreshModels()}>{loadingModels ? "获取中…" : "获取模型列表"}</button></div>
+                {modelOptions.length > 0 ? (
+                  <label>
+                    可用模型
+                    <select value={modelOptions.includes(model) ? model : ""} onChange={(event) => { if (event.target.value) setModel(event.target.value); }}>
+                      <option value="">手动填写</option>
+                      {modelOptions.map((option) => <option key={option} value={option}>{option}</option>)}
+                    </select>
+                  </label>
+                ) : null}
                 <label>
-                  Model
-                  <input name="model" value={model} onChange={(event) => setModel(event.target.value)} placeholder="gpt-4o-mini" />
+                  当前模型（仅 DeepSeek）
+                  <input name="model" value={model} onChange={(event) => setModel(event.target.value)} placeholder="deepseek-flash" />
+                </label>
+                {modelOptions.length > 0 && !modelOptions.includes(model) ? <p className="llm-settings-error">当前模型已不在可用列表中，请选择上方模型。</p> : null}
+                <label>
+                  思考强度
+                  <select name="reasoningEffort" value={reasoningEffort} onChange={(event) => setReasoningEffort(event.target.value as LlmReasoningEffort)}>
+                    <option value="auto">自动（不发送强度参数）</option>
+                    <option value="none">关闭</option>
+                    <option value="low">低</option>
+                    <option value="high">高</option>
+                    <option value="max">最高</option>
+                  </select>
                 </label>
 
-                {message ? <p className="llm-settings-message" role="status">{message}</p> : null}
-                {error ? <p className="llm-settings-error" role="alert">{error}</p> : null}
+                {notice ? (
+                  <p className={notice.kind === "success" ? "llm-settings-message" : "llm-settings-error"} role={notice.kind === "success" ? "status" : "alert"}>
+                    {notice.text}
+                  </p>
+                ) : null}
 
                 <footer className="llm-settings-actions">
                   {status?.source === "database" ? <button type="button" className="llm-settings-clear" onClick={clearStoredKey} disabled={saving}>移除本地 Key</button> : <span />}

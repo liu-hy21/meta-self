@@ -8,6 +8,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
   ChoreCadence,
+  FinanceLargeExpenseType,
   FinanceLiteracyKind,
   RelationKind,
   TechStackStatus,
@@ -40,6 +41,7 @@ import {
 } from "@/lib/finance-holdings";
 import type { FinanceHoldingAccount } from "@prisma/client";
 import { fetchGoldPricePerGram, fetchNineQuantFinancePrice, resolveFinancePrice, sharesToAmountMinor } from "@/lib/finance-prices";
+import { askFinanceExpenseAgent } from "@/lib/finance-expense-agent";
 import { prisma } from "@/lib/db";
 import { generateReportForUser } from "@/lib/reports/generate";
 import { generateRelationAiReport } from "@/lib/relation/ai-analysis";
@@ -348,6 +350,69 @@ export async function upsertFinanceProfile(formData: FormData) {
   });
   revalidateApp();
   redirect("/finance/profile");
+}
+
+function financeLargeExpenseRedirect(page: number, expenseYear: string | null, error = false) {
+  const params = new URLSearchParams({ expensePage: String(page) });
+  if (expenseYear) params.set("expenseYear", expenseYear);
+  if (error) params.set("largeExpenseError", "required");
+  return `/finance/profile?${params.toString()}#finance-large-expenses-card`;
+}
+
+export async function createFinanceLargeExpense(formData: FormData) {
+  const userId = await getAppUserId();
+  const title = optionalText(formData, "title");
+  const occurredOn = optionalDate(formData, "occurredOn");
+  const amountYuan = optionalNumber(formData, "amountYuan");
+  const typeValue = optionalText(formData, "type");
+  const expenseYear = optionalText(formData, "expenseYear");
+  const type = Object.values(FinanceLargeExpenseType).find((value) => value === typeValue);
+
+  if (!title || !occurredOn || amountYuan == null || amountYuan <= 0 || !type) {
+    redirect(financeLargeExpenseRedirect(1, expenseYear, true));
+  }
+
+  await prisma.financeLargeExpense.create({
+    data: {
+      userId,
+      title: title.slice(0, 120),
+      amountMinor: Math.round(amountYuan * 100),
+      occurredOn,
+      type,
+    },
+  });
+
+  revalidateApp();
+  redirect(financeLargeExpenseRedirect(1, expenseYear));
+}
+
+export async function updateFinanceLargeExpense(formData: FormData) {
+  const userId = await getAppUserId();
+  const id = optionalText(formData, "id");
+  const title = optionalText(formData, "title");
+  const occurredOn = optionalDate(formData, "occurredOn");
+  const amountYuan = optionalNumber(formData, "amountYuan");
+  const typeValue = optionalText(formData, "type");
+  const type = Object.values(FinanceLargeExpenseType).find((value) => value === typeValue);
+  const page = Math.max(1, Number.parseInt(String(formData.get("expensePage") ?? "1"), 10) || 1);
+  const expenseYear = optionalText(formData, "expenseYear");
+
+  if (!id || !title || !occurredOn || amountYuan == null || amountYuan <= 0 || !type) {
+    redirect(financeLargeExpenseRedirect(page, expenseYear, true));
+  }
+
+  await prisma.financeLargeExpense.updateMany({
+    where: { id, userId },
+    data: {
+      title: title.slice(0, 120),
+      amountMinor: Math.round(amountYuan * 100),
+      occurredOn,
+      type,
+    },
+  });
+
+  revalidateApp();
+  redirect(financeLargeExpenseRedirect(page, expenseYear));
 }
 
 export async function upsertFinanceHoldings(formData: FormData) {
@@ -1451,6 +1516,15 @@ export async function generateBiweeklyReport() {
 
 export async function generateMonthlyReport() {
   await generateReportAction("MONTHLY");
+}
+
+export async function chatFinanceLargeExpensesAction(year: number | null, history: Array<{ role: "user" | "assistant"; content: string }>) {
+  if (year != null && (!Number.isInteger(year) || year < 1900 || year > 2200)) throw new Error("年份无效。");
+  if (!Array.isArray(history) || !history.length || history.length > 16 || history.some((item) =>
+    !item || !["user", "assistant"].includes(item.role) || typeof item.content !== "string" || !item.content.trim() || item.content.length > 2000
+  )) throw new Error("对话内容无效。");
+  if (history.at(-1)?.role !== "user") throw new Error("请先输入问题。");
+  return askFinanceExpenseAgent(await getAppUserId(), year, history);
 }
 
 export type RelationAiActionState = { ok: boolean; message: string };

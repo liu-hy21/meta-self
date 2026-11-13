@@ -7,11 +7,12 @@ import { splitCnyMinor, type AssetAllocationKey, type AssetAllocationSlice } fro
 
 const SIZE = 200;
 const STROKE = 22;
-const RADIUS = (SIZE - STROKE) / 2;
+// Leave room for the thicker active arc inside the SVG viewport.
+const RADIUS = (SIZE - (STROKE + 4)) / 2 - 1;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 const GAP = 3;
 
-type AllocationStatus = "ok" | "over" | "unlimited";
+type AllocationStatus = "ok" | "below" | "over";
 
 type FinanceAssetAllocationPieProps = {
   slices: AssetAllocationSlice[];
@@ -36,6 +37,9 @@ export function FinanceAssetAllocationPie({
   const visible = slices.filter((s) => s.cnyMinor > 0);
   const focused = slices.find((s) => s.key === active) ?? null;
 
+  const statusLabel = (status: AllocationStatus | undefined) =>
+    status === "over" ? "超限" : status === "below" ? "不足" : status === "ok" ? "正常" : null;
+
   const choose = (key: AssetAllocationKey) => {
     const next = selected === key ? null : key;
     if (activeKey === undefined) setInternalSelected(next);
@@ -54,8 +58,8 @@ export function FinanceAssetAllocationPie({
   const centerPct = focused && total > 0 ? `${((focused.cnyMinor / total) * 100).toFixed(1)}%` : null;
 
   return (
-    <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center lg:flex-col xl:flex-row">
-      <div className="relative h-44 w-44 shrink-0">
+    <div className="flex flex-col items-center gap-6 sm:flex-row sm:items-center lg:flex-col xl:mx-auto xl:w-full xl:max-w-[44rem] xl:flex-row xl:gap-8">
+      <div className="relative h-44 w-44 shrink-0 xl:h-36 xl:w-36 2xl:h-44 2xl:w-44">
         <svg viewBox={`0 0 ${SIZE} ${SIZE}`} className="h-full w-full -rotate-90" role="group" aria-label="资产结构环形图">
           <circle
             cx={SIZE / 2}
@@ -69,6 +73,7 @@ export function FinanceAssetAllocationPie({
           {arcs.map(({ slice, offset: o, length }) => {
             const dim = active != null && active !== slice.key;
             const status = sliceStates?.[slice.key];
+            const label = statusLabel(status);
             return (
               <circle
                 key={slice.key}
@@ -85,7 +90,7 @@ export function FinanceAssetAllocationPie({
                 opacity={dim ? 0.28 : 1}
                 tabIndex={0}
                 role="button"
-                aria-label={`${slice.label}${status === "over" ? "，超限" : status === "unlimited" ? "，不限" : "，正常"}`}
+                aria-label={label ? `${slice.label}，${label}` : slice.label}
                 onPointerEnter={() => setHovered(slice.key)}
                 onPointerLeave={() => setHovered(null)}
                 onFocus={() => setHovered(slice.key)}
@@ -113,6 +118,7 @@ export function FinanceAssetAllocationPie({
           const pct = total > 0 ? (slice.cnyMinor / total) * 100 : 0;
           const isActive = active === slice.key;
           const status = sliceStates?.[slice.key];
+          const label = statusLabel(status);
           return (
             <li key={slice.key}>
               <button
@@ -134,9 +140,9 @@ export function FinanceAssetAllocationPie({
                   </span>
                   <span className="flex shrink-0 items-center gap-2 tabular-nums text-[var(--muted)]">
                     {pct.toFixed(1)}%
-                    {showStatus && status ? (
-                      <span className={status === "over" ? "text-[#b42318]" : status === "ok" ? "text-[#1f7a4d]" : "text-[var(--muted)]"}>
-                        {status === "over" ? "超限" : status === "ok" ? "正常" : "不限"}
+                    {showStatus && label ? (
+                      <span className={status === "ok" ? "text-[#1f7a4d]" : "text-[#b42318]"}>
+                        {label}
                       </span>
                     ) : null}
                   </span>

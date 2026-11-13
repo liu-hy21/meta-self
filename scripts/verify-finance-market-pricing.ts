@@ -244,7 +244,7 @@ async function main() {
   assert.match(sectionSource, /科技防守层/);
   assert.match(formSource, /消费防守层/);
   assert.match(sectionSource, /消费防守层/);
-  assert.match(sectionSource, /pl-9 pr-5/);
+  assert.match(sectionSource, /pl-10/);
   assert.match(schema, /priceCnyMinor\s+Int\?/);
   assert.match(visibilitySource, /useState\(false\)/);
   assert.match(visibilitySource, /\*\*\*\*\*/);
@@ -255,6 +255,8 @@ async function main() {
   assert.match(formSource, /FinanceSensitiveAmount/);
   assert.match(trendSource, /FinanceSensitiveAmount/);
   assert.match(allocationSource, /FinanceSensitiveAmount/);
+  assert.match(allocationSource, /2xl:w-\[11\.7rem\]/);
+  assert.match(allocationSource, /2xl:translate-x-2/);
 
   console.log("PASS finance market pricing primitives");
 }
