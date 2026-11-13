@@ -1,16 +1,11 @@
 import Link from "next/link";
-import type { FinanceHoldingAccount } from "@prisma/client";
 
 import { FinanceAnalysisTabs, type FinanceAnalysisView } from "@/components/finance/finance-analysis-tabs";
 import { FinanceAnalysisView as FinanceAnalysisContent } from "@/components/finance/finance-analysis-view";
 import { FinanceVisibilityProvider, FinanceVisibilityToggle } from "@/components/finance/finance-visibility";
 import { pageWrap } from "@/components/ui/form-shell";
-import { buildFinanceAssetMetrics } from "@/lib/finance-asset-metrics";
-import { financeHoldingConfigs } from "@/lib/finance-holdings";
-import { prisma } from "@/lib/db";
-import { getAppUser } from "@/lib/user";
 
-const validViews: FinanceAnalysisView[] = ["signals", "metrics", "ai"];
+const validViews: FinanceAnalysisView[] = ["signals", "ai"];
 
 export default async function FinanceAnalysisPage({
   searchParams,
@@ -19,11 +14,6 @@ export default async function FinanceAnalysisPage({
 }) {
   const { view: requestedView } = await searchParams;
   const view = validViews.includes(requestedView as FinanceAnalysisView) ? requestedView as FinanceAnalysisView : "signals";
-  const user = view === "metrics" ? await getAppUser() : null;
-  const holdings = user ? await prisma.financeHolding.findMany({ where: { userId: user.id } }) : [];
-  const amounts = new Map<FinanceHoldingAccount, number>(financeHoldingConfigs.map((config) => [config.account, 0]));
-  for (const holding of holdings) amounts.set(holding.account, holding.amountMinor);
-  const metrics = view === "metrics" ? buildFinanceAssetMetrics(amounts) : undefined;
 
   return (
     <div className={pageWrap}>
@@ -33,7 +23,7 @@ export default async function FinanceAnalysisPage({
             <div>
               <p className="text-[11px] tracking-[0.2em] text-[var(--muted)]">FINANCE · ANALYSIS</p>
               <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--ink)]">数据分析</h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">从市场信号、资产结构指标和你的五层策略三个角度，逐步形成财商研究工作区。</p>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--muted)]">从市场信号和你的五层策略两个角度，逐步形成财商研究工作区。</p>
             </div>
             <div className="flex items-center gap-2">
               <Link
@@ -47,7 +37,7 @@ export default async function FinanceAnalysisPage({
           </header>
 
           <FinanceAnalysisTabs current={view} />
-          <FinanceAnalysisContent view={view} metrics={metrics} />
+          <FinanceAnalysisContent view={view} />
         </div>
       </FinanceVisibilityProvider>
     </div>

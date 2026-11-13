@@ -11,9 +11,9 @@ async function main() {
   const topBarSource = await readFile("src/components/shell/top-bar.tsx", "utf8");
   const leftRailSource = await readFile("src/components/shell/left-rail.tsx", "utf8");
 
-  assert.match(tabsSource, /export type FinanceAnalysisView\s*=\s*"signals"\s*\|\s*"metrics"\s*\|\s*"ai"/);
+  assert.match(tabsSource, /export type FinanceAnalysisView\s*=\s*"signals"\s*\|\s*"ai"/);
   assert.match(tabsSource, /市场信号分析/);
-  assert.match(tabsSource, /资产结构指标/);
+  assert.doesNotMatch(tabsSource, /资产结构指标/);
   assert.match(tabsSource, /AI 分析/);
   assert.match(tabsSource, /\/finance\/analysis\?view=\$\{view\.key\}/);
   assert.match(tabsSource, /aria-current/);
@@ -22,7 +22,7 @@ async function main() {
   assert.match(pageSource, /searchParams/);
   assert.match(pageSource, /validViews/);
   assert.match(pageSource, /signals/);
-  assert.match(pageSource, /metrics/);
+  assert.doesNotMatch(pageSource, /buildFinanceAssetMetrics/);
   assert.match(pageSource, /ai/);
   assert.match(pageSource, /FinanceAnalysisTabs/);
   assert.match(pageSource, /FinanceAnalysisView/);
@@ -30,7 +30,7 @@ async function main() {
   assert.match(pageSource, /FinanceVisibilityToggle/);
 
   assert.match(viewSource, /市场信号分析/);
-  assert.match(viewSource, /FinanceAssetMetricsDashboard/);
+  assert.doesNotMatch(viewSource, /FinanceAssetMetricsDashboard/);
   assert.match(viewSource, /AI 分析/);
   assert.match(viewSource, /真实当前市场信号/);
   assert.match(viewSource, /我的资产结构纯指标/);
@@ -46,6 +46,9 @@ async function main() {
   assert.match(metricLogicSource, /FINANCE_EMERGENCY_CASH_FLOOR_CNY_MINOR/);
   assert.match(metricLogicSource, /ABSOLUTE_LIMITS/);
   assert.match(metricLogicSource, /overLimitCount/);
+  assert.match(assetsSource, /FinanceAssetMetricsDashboard/);
+  assert.match(assetsSource, /buildFinanceAssetMetrics/);
+  assert.match(assetsSource, /xl:grid-cols-2/);
 
   assert.match(assetsSource, /href="\/finance\/analysis\?view=signals"/);
   assert.match(assetsSource, /数据分析/);

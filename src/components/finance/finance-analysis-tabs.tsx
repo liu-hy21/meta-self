@@ -1,11 +1,10 @@
 import Link from "next/link";
 
-export type FinanceAnalysisView = "signals" | "metrics" | "ai";
+export type FinanceAnalysisView = "signals" | "ai";
 
 const views: { key: FinanceAnalysisView; number: string; label: string }[] = [
   { key: "signals", number: "01", label: "市场信号分析" },
-  { key: "metrics", number: "02", label: "资产结构指标" },
-  { key: "ai", number: "03", label: "AI 分析" },
+  { key: "ai", number: "02", label: "AI 分析" },
 ];
 
 export function FinanceAnalysisTabs({ current }: { current: FinanceAnalysisView }) {

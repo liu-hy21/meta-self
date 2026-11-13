@@ -98,7 +98,7 @@ function SummaryCard({
   );
 }
 
-export function FinanceAssetMetricsDashboard({ metrics }: { metrics: FinanceAssetMetrics }) {
+export function FinanceAssetMetricsDashboard({ metrics, compact = false }: { metrics: FinanceAssetMetrics; compact?: boolean }) {
   const firstIssue = metrics.rules.find((rule) => rule.status === "over") ?? metrics.rules[0] ?? null;
   const [selectedLayer, setSelectedLayer] = useState<AssetAllocationKey | null>(firstIssue?.layerKey ?? null);
   const layerRules = selectedLayer ? metrics.rules.filter((rule) => rule.layerKey === selectedLayer) : metrics.rules;
@@ -106,8 +106,8 @@ export function FinanceAssetMetricsDashboard({ metrics }: { metrics: FinanceAsse
   const selectedLabel = selectedLayer ? metrics.slices.find((slice) => slice.key === selectedLayer)?.label ?? "上限检查" : "全部上限";
 
   return (
-    <section className="space-y-5" aria-labelledby="finance-metrics-title">
-      <div className={`${card} p-5 sm:p-6`}>
+    <section className={compact ? "space-y-4" : "space-y-5"} aria-labelledby="finance-metrics-title">
+      <div className={`${card} ${compact ? "p-4" : "p-5 sm:p-6"}`}>
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className={eyebrow}>PORTFOLIO METRICS</p>
@@ -116,7 +116,7 @@ export function FinanceAssetMetricsDashboard({ metrics }: { metrics: FinanceAsse
           <StatusMark status={metrics.overLimitCount > 0 ? "over" : "ok"} />
         </div>
 
-        <div className="mt-5 grid gap-3 md:grid-cols-2">
+        <div className={`mt-5 grid gap-3 ${compact ? "grid-cols-1" : "md:grid-cols-2"}`}>
           <SummaryCard
             label="绝对上限"
             status={metrics.overLimitCount > 0 ? "over" : "ok"}
@@ -155,8 +155,8 @@ export function FinanceAssetMetricsDashboard({ metrics }: { metrics: FinanceAsse
         </div>
       )}
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)]">
-        <section className={`${card} p-5 sm:p-6`} aria-labelledby="finance-allocation-title">
+      <div className={compact ? "space-y-4" : "grid gap-5 xl:grid-cols-[minmax(0,1.1fr)_minmax(360px,0.9fr)]"}>
+        <section className={`${card} ${compact ? "p-4" : "p-5 sm:p-6"}`} aria-labelledby="finance-allocation-title">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className={eyebrow}>ALLOCATION</p>
@@ -175,7 +175,7 @@ export function FinanceAssetMetricsDashboard({ metrics }: { metrics: FinanceAsse
           </div>
         </section>
 
-        <section className={`${card} p-5 sm:p-6`} aria-labelledby="finance-limit-title">
+        <section className={`${card} ${compact ? "p-4" : "p-5 sm:p-6"}`} aria-labelledby="finance-limit-title">
           <div className="flex items-center justify-between gap-4">
             <div>
               <p className={eyebrow}>LIMIT CHECK</p>

@@ -1,8 +1,6 @@
 import type { ReactNode } from "react";
 
-import { FinanceAssetMetricsDashboard } from "@/components/finance/finance-asset-metrics-dashboard";
 import type { FinanceAnalysisView as FinanceAnalysisViewKey } from "@/components/finance/finance-analysis-tabs";
-import type { FinanceAssetMetrics } from "@/lib/finance-asset-metrics";
 
 const card = "border border-[var(--ink)]/10 bg-[var(--panel)] shadow-[0_1px_2px_rgba(28,25,23,0.04)]";
 const eyebrow = "text-[10px] tracking-[0.2em] text-[var(--muted)]";
@@ -48,11 +46,6 @@ function SignalsPanel() {
   );
 }
 
-function MetricsPanel({ metrics }: { metrics?: FinanceAssetMetrics }) {
-  if (!metrics) return <p className="text-sm text-[var(--muted)]">暂无资产数据</p>;
-  return <FinanceAssetMetricsDashboard metrics={metrics} />;
-}
-
 function AiPanel() {
   return (
     <section className="space-y-5" aria-labelledby="finance-ai-title">
@@ -95,8 +88,7 @@ function AiPanel() {
   );
 }
 
-export function FinanceAnalysisView({ view, metrics }: { view: FinanceAnalysisViewKey; metrics?: FinanceAssetMetrics }) {
-  if (view === "metrics") return <MetricsPanel metrics={metrics} />;
+export function FinanceAnalysisView({ view }: { view: FinanceAnalysisViewKey }) {
   if (view === "ai") return <AiPanel />;
   return <SignalsPanel />;
 }

@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { FinanceHoldingAccount, FinanceHoldingLog } from "@prisma/client";
 
 import { FinanceAssetAllocationPie } from "@/components/finance/finance-asset-allocation-pie";
+import { FinanceAssetMetricsDashboard } from "@/components/finance/finance-asset-metrics-dashboard";
 import { FinanceAssetTrendChart, type AssetTrendPoint } from "@/components/finance/finance-asset-trend-chart";
 import { FinanceHoldingsForm } from "@/components/finance/finance-holdings-form";
 import {
@@ -30,6 +31,7 @@ import {
   USD_TO_CNY,
   type HoldingConfig,
 } from "@/lib/finance-holdings";
+import { buildFinanceAssetMetrics } from "@/lib/finance-asset-metrics";
 
 type HoldingRow = {
   account: FinanceHoldingAccount;
@@ -324,6 +326,7 @@ export function FinanceAssetsSection({
 
   const totalCnyMinor = computeTotalCnyMinor(amounts);
   const slices = computeAllocationCnyMinor(amounts);
+  const assetMetrics = buildFinanceAssetMetrics(amounts);
   const sum = (configs: HoldingConfig[]) =>
     configs.reduce((s, c) => s + holdingToCnyMinor(amounts.get(c.account) ?? 0, c), 0);
   const overseasCny = sum([...schwabHoldingConfigs, ...overseasHoldings]);
@@ -425,9 +428,12 @@ export function FinanceAssetsSection({
         </div>
       </section>
 
-      <section className={`${card} p-6 sm:p-7`}>
-        <FinanceAssetTrendChart points={trendPoints} />
-      </section>
+      <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
+        <section className={`${card} p-6 sm:p-7`}>
+          <FinanceAssetTrendChart points={trendPoints} />
+        </section>
+        <FinanceAssetMetricsDashboard metrics={assetMetrics} compact />
+      </div>
 
       <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
         <RegionCard title="海外" caption={`美元 × ${USD_TO_CNY} · 港币 × ${HKD_TO_CNY}`} subtotalMinor={overseasCny}>
