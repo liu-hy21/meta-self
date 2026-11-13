@@ -5,6 +5,11 @@ import { FinanceAssetAllocationPie } from "@/components/finance/finance-asset-al
 import { FinanceAssetTrendChart, type AssetTrendPoint } from "@/components/finance/finance-asset-trend-chart";
 import { FinanceHoldingsForm } from "@/components/finance/finance-holdings-form";
 import {
+  FinanceSensitiveAmount,
+  FinanceVisibilityProvider,
+  FinanceVisibilityToggle,
+} from "@/components/finance/finance-visibility";
+import {
   accountAllocation,
   computeAllocationCnyMinor,
   computeTotalCnyMinor,
@@ -41,10 +46,10 @@ const eyebrow = "text-[11px] tracking-[0.2em] text-[var(--muted)]";
 function Yuan({ minor, className = "" }: { minor: number; className?: string }) {
   const { integer, decimal } = splitCnyMinor(minor);
   return (
-    <span className={`tabular-nums ${className}`}>
+    <FinanceSensitiveAmount className={`tabular-nums ${className}`}>
       ¥{integer}
       <span className="opacity-45">.{decimal}</span>
-    </span>
+    </FinanceSensitiveAmount>
   );
 }
 
@@ -95,9 +100,15 @@ function HoldingLine({
           </p>
         </div>
         <div className="text-right">
-          <p className="text-sm font-medium tabular-nums text-[var(--ink)]">{formatNativeAmount(amountMinor, config)}</p>
+          <FinanceSensitiveAmount className="text-sm font-medium tabular-nums text-[var(--ink)]">
+            {formatNativeAmount(amountMinor, config)}
+          </FinanceSensitiveAmount>
           <p className="mt-0.5 text-[11px] tabular-nums text-[var(--muted)]">
-            {config.currency !== "CNY" ? `≈ ¥${splitCnyMinor(cny).integer} · ` : ""}
+            {config.currency !== "CNY" ? (
+              <>
+                <FinanceSensitiveAmount>≈ ¥{splitCnyMinor(cny).integer}</FinanceSensitiveAmount> · {" "}
+              </>
+            ) : null}
             {share.toFixed(1)}%
           </p>
         </div>
@@ -168,7 +179,9 @@ function LogEntry({ group, previousTotal }: { group: LogGroup; previousTotal: nu
           <Yuan minor={group.totalCnyMinor} className="font-medium text-[var(--ink)]" />
           {delta != null && delta !== 0 ? (
             <span className={`ml-2 text-xs tabular-nums ${delta > 0 ? "text-[#4d7a66]" : "text-[#b3644d]"}`}>
-              {delta > 0 ? "+" : "-"}¥{splitCnyMinor(Math.abs(delta)).integer}
+              <FinanceSensitiveAmount>
+                {delta > 0 ? "+" : "-"}¥{splitCnyMinor(Math.abs(delta)).integer}
+              </FinanceSensitiveAmount>
             </span>
           ) : null}
         </p>
@@ -182,8 +195,12 @@ function LogEntry({ group, previousTotal }: { group: LogGroup; previousTotal: nu
               className="inline-flex items-center gap-1.5 rounded-full bg-[var(--ink)]/[0.045] px-2.5 py-1 text-[11px] tabular-nums text-[var(--ink)]"
             >
               <span className="text-[var(--muted)]">{holdingAccountLabel(log.account)}</span>
-              {log.previousAmountMinor == null ? "" : `${formatNativeAmount(log.previousAmountMinor, config)} → `}
-              {formatNativeAmount(log.newAmountMinor, config)}
+              {log.previousAmountMinor == null ? null : (
+                <FinanceSensitiveAmount>
+                  {formatNativeAmount(log.previousAmountMinor, config)} → {" "}
+                </FinanceSensitiveAmount>
+              )}
+              <FinanceSensitiveAmount>{formatNativeAmount(log.newAmountMinor, config)}</FinanceSensitiveAmount>
             </span>
           );
         })}
@@ -275,23 +292,28 @@ export function FinanceAssetsSection({
 
   if (editing) {
     return (
-      <div className="space-y-6">
-        <div>
-          <p className={eyebrow}>UPDATE SNAPSHOT</p>
-          <h2 className="mt-1 text-xl font-semibold text-[var(--ink)]">更新资产</h2>
-          <p className="mt-1 text-sm text-[var(--muted)]">按当前实际余额填写全部账户，保存后生成今日快照。</p>
+      <FinanceVisibilityProvider>
+        <div className="space-y-6">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <p className={eyebrow}>UPDATE SNAPSHOT</p>
+              <h2 className="mt-1 text-xl font-semibold text-[var(--ink)]">更新资产</h2>
+              <p className="mt-1 text-sm text-[var(--muted)]">按当前实际余额填写全部账户，保存后生成今日快照。</p>
+            </div>
+            <FinanceVisibilityToggle className="border-[var(--ink)]/15 text-[var(--ink)] hover:bg-[var(--ink)]/[0.05]" />
+          </div>
+          <FinanceHoldingsForm
+            initial={Object.fromEntries(amounts)}
+            initialQuantities={initialQuantities}
+            marketPrices={marketPrices}
+            marketPriceCurrencies={marketPriceCurrencies}
+            priceFetchedAt={priceFetchedAt}
+            error={assetsError}
+            notice={assetsNotice}
+            noticeAsset={assetsNoticeAsset}
+          />
         </div>
-        <FinanceHoldingsForm
-          initial={Object.fromEntries(amounts)}
-          initialQuantities={initialQuantities}
-          marketPrices={marketPrices}
-          marketPriceCurrencies={marketPriceCurrencies}
-          priceFetchedAt={priceFetchedAt}
-          error={assetsError}
-          notice={assetsNotice}
-          noticeAsset={assetsNoticeAsset}
-        />
-      </div>
+      </FinanceVisibilityProvider>
     );
   }
 
@@ -315,7 +337,8 @@ export function FinanceAssetsSection({
   const { integer, decimal } = splitCnyMinor(totalCnyMinor);
 
   return (
-    <div className="space-y-6">
+    <FinanceVisibilityProvider>
+      <div className="space-y-6">
       {assetsNotice === "stale-price" ? (
         <p className="rounded-xl border border-[#c29a5b]/30 bg-[#c29a5b]/[0.1] px-4 py-3 text-sm text-[#765a2d]" role="status">
           {assetsNoticeAsset ?? "QQQ / VOO"} 暂时沿用了上次缓存价格。
@@ -328,18 +351,23 @@ export function FinanceAssetsSection({
               <p className="text-[11px] tracking-[0.25em] opacity-60">NET ASSETS · CNY</p>
               <p className="mt-1 text-sm opacity-80">总资产</p>
             </div>
-            <Link
-              href="/finance/profile?edit=1"
-              className="inline-flex h-9 items-center gap-1.5 rounded-full bg-[var(--panel)] px-4 text-sm font-medium text-[var(--ink)] transition-transform hover:-translate-y-px"
-            >
-              更新资产
-            </Link>
+            <div className="flex items-center gap-2">
+              <FinanceVisibilityToggle className="border-[var(--panel)]/30 text-[var(--panel)] hover:bg-[var(--panel)]/10" />
+              <Link
+                href="/finance/profile?edit=1"
+                className="inline-flex h-9 items-center gap-1.5 rounded-full bg-[var(--panel)] px-4 text-sm font-medium text-[var(--ink)] transition-transform hover:-translate-y-px"
+              >
+                更新资产
+              </Link>
+            </div>
           </div>
 
           <div>
             <p className="text-4xl font-semibold tracking-tight tabular-nums sm:text-5xl">
+              <FinanceSensitiveAmount>
               ¥{integer}
               <span className="text-2xl opacity-40 sm:text-3xl">.{decimal}</span>
+              </FinanceSensitiveAmount>
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
               {delta != null && previous ? (
@@ -348,7 +376,9 @@ export function FinanceAssetsSection({
                     delta >= 0 ? "bg-[#9fc7b3]/15 text-[#9fc7b3]" : "bg-[#e3a593]/15 text-[#e3a593]"
                   }`}
                 >
-                  {delta >= 0 ? "▲" : "▼"} ¥{splitCnyMinor(Math.abs(delta)).integer}
+                  <FinanceSensitiveAmount>
+                    {delta >= 0 ? "▲" : "▼"} ¥{splitCnyMinor(Math.abs(delta)).integer}
+                  </FinanceSensitiveAmount>
                   {deltaPct != null ? ` · ${Math.abs(deltaPct).toFixed(2)}%` : ""}
                 </span>
               ) : null}
@@ -362,11 +392,15 @@ export function FinanceAssetsSection({
           <dl className="grid grid-cols-2 gap-6 border-t border-white/10 pt-6">
             <div>
               <dt className="text-xs opacity-50">海外</dt>
-              <dd className="mt-1 text-lg font-medium tabular-nums">¥{splitCnyMinor(overseasCny).integer}</dd>
+              <dd className="mt-1 text-lg font-medium tabular-nums">
+                <FinanceSensitiveAmount>¥{splitCnyMinor(overseasCny).integer}</FinanceSensitiveAmount>
+              </dd>
             </div>
             <div>
               <dt className="text-xs opacity-50">国内</dt>
-              <dd className="mt-1 text-lg font-medium tabular-nums">¥{splitCnyMinor(domesticCny).integer}</dd>
+              <dd className="mt-1 text-lg font-medium tabular-nums">
+                <FinanceSensitiveAmount>¥{splitCnyMinor(domesticCny).integer}</FinanceSensitiveAmount>
+              </dd>
             </div>
           </dl>
         </div>
@@ -386,9 +420,9 @@ export function FinanceAssetsSection({
         <RegionCard title="海外" caption={`美元 × ${USD_TO_CNY} · 港币 × ${HKD_TO_CNY}`} subtotalMinor={overseasCny}>
           <li className="flex items-center justify-between bg-[var(--ink)]/[0.02] px-5 py-3">
             <span className="text-xs font-semibold tracking-[0.2em] text-[var(--ink)]">SCHWAB</span>
-            <span className="text-xs tabular-nums text-[var(--muted)]">
+            <FinanceSensitiveAmount className="text-xs tabular-nums text-[var(--muted)]">
               {formatNativeAmount(schwabUsd, schwabHoldingConfigs[0])}
-            </span>
+            </FinanceSensitiveAmount>
           </li>
           {schwabHoldingConfigs.filter((c) => c.account === "SCHWAB_OTHER").map((c) => (
             <HoldingLine
@@ -518,6 +552,7 @@ export function FinanceAssetsSection({
       </div>
 
       <ChangeLog logs={logs} />
-    </div>
+      </div>
+    </FinanceVisibilityProvider>
   );
 }

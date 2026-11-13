@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { upsertFinanceHoldings } from "@/app/actions/data";
 import { SaveButton } from "@/components/body/save-button";
+import { FinanceSensitiveAmount } from "@/components/finance/finance-visibility";
 import {
   accountAllocation,
   computeAllocationCnyMinor,
@@ -79,9 +80,24 @@ function HoldingField({
         <span className="mt-0.5 block text-[11px] text-[var(--muted)]">
           {marketPriced
             ? marketPriceMinor != null
-              ? `${formatMarketPriceMinor(marketPriceMinor, marketPriceCurrency ?? "USD")} · ${formatPriceDate(priceFetchedAt)} · ≈ ¥${splitCnyMinor(cnyMinor ?? 0).integer}`
+              ? (
+                  <>
+                    {formatMarketPriceMinor(marketPriceMinor, marketPriceCurrency ?? "USD")} · {formatPriceDate(priceFetchedAt)} · {" "}
+                    <FinanceSensitiveAmount>≈ ¥{splitCnyMinor(cnyMinor ?? 0).integer}</FinanceSensitiveAmount>
+                  </>
+                )
               : "价格将在保存时更新"
-            : `${config.currencyLabel}${config.currency !== "CNY" && cnyMinor != null ? ` · ≈ ¥${splitCnyMinor(cnyMinor).integer}` : ""}`}
+            : (
+                <>
+                  {config.currencyLabel}
+                  {config.currency !== "CNY" && cnyMinor != null ? (
+                    <>
+                      {" · "}
+                      <FinanceSensitiveAmount>≈ ¥{splitCnyMinor(cnyMinor).integer}</FinanceSensitiveAmount>
+                    </>
+                  ) : null}
+                </>
+              )}
         </span>
       </span>
       <span
@@ -239,7 +255,9 @@ export function FinanceHoldingsForm({
                 科技防守层
               </span>
               <span className="text-xs tabular-nums text-[var(--muted)]">
-                {techDefenseHoldings.length} 项 · ≈ ¥{splitCnyMinor(techDefenseCny).integer} <span aria-hidden>⌄</span>
+                {techDefenseHoldings.length} 项 · {" "}
+                <FinanceSensitiveAmount>≈ ¥{splitCnyMinor(techDefenseCny).integer}</FinanceSensitiveAmount>{" "}
+                <span aria-hidden>⌄</span>
               </span>
             </summary>
             <div className="-mx-5 mt-3 divide-y divide-[var(--ink)]/[0.06] border-t border-[var(--ink)]/[0.06]">
@@ -263,7 +281,9 @@ export function FinanceHoldingsForm({
                 消费防守层
               </span>
               <span className="text-xs tabular-nums text-[var(--muted)]">
-                {consumerDefenseHoldings.length} 项 · ≈ ¥{splitCnyMinor(consumerDefenseCny).integer} <span aria-hidden>⌄</span>
+                {consumerDefenseHoldings.length} 项 · {" "}
+                <FinanceSensitiveAmount>≈ ¥{splitCnyMinor(consumerDefenseCny).integer}</FinanceSensitiveAmount>{" "}
+                <span aria-hidden>⌄</span>
               </span>
             </summary>
             <div className="-mx-5 mt-3 divide-y divide-[var(--ink)]/[0.06] border-t border-[var(--ink)]/[0.06]">
@@ -336,11 +356,22 @@ export function FinanceHoldingsForm({
         <div>
           <p className="text-[11px] tracking-[0.2em] opacity-60">预览合计 · 人民币</p>
           <p className="mt-2 text-3xl font-semibold tabular-nums">
-            ¥{integer}
-            <span className="text-lg opacity-50">.{decimal}</span>
+            <FinanceSensitiveAmount>
+              ¥{integer}
+              <span className="text-lg opacity-50">.{decimal}</span>
+            </FinanceSensitiveAmount>
           </p>
           <p className={`mt-1 text-xs tabular-nums ${diff === 0 ? "opacity-50" : diff > 0 ? "text-[#9fc7b3]" : "text-[#e3a593]"}`}>
-            {diff === 0 ? "与当前一致" : `${diff > 0 ? "+" : "-"}¥${splitCnyMinor(Math.abs(diff)).integer} 较当前`}
+            {diff === 0 ? (
+              "与当前一致"
+            ) : (
+              <>
+                <FinanceSensitiveAmount>
+                  {diff > 0 ? "+" : "-"}¥{splitCnyMinor(Math.abs(diff)).integer}
+                </FinanceSensitiveAmount>{" "}
+                较当前
+              </>
+            )}
           </p>
         </div>
 

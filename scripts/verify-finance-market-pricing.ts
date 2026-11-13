@@ -225,6 +225,9 @@ async function main() {
 
   const formSource = await readFile("src/components/finance/finance-holdings-form.tsx", "utf8");
   const sectionSource = await readFile("src/components/finance/finance-assets-section.tsx", "utf8");
+  const visibilitySource = await readFile("src/components/finance/finance-visibility.tsx", "utf8");
+  const trendSource = await readFile("src/components/finance/finance-asset-trend-chart.tsx", "utf8");
+  const allocationSource = await readFile("src/components/finance/finance-asset-allocation-pie.tsx", "utf8");
   const holdingsSource = await readFile("src/lib/finance-holdings.ts", "utf8");
   assert.match(formSource, /股/);
   assert.match(formSource, /克/);
@@ -240,6 +243,15 @@ async function main() {
   assert.match(sectionSource, /消费防守层/);
   assert.match(sectionSource, /pl-9 pr-5/);
   assert.match(schema, /priceCnyMinor\s+Int\?/);
+  assert.match(visibilitySource, /useState\(false\)/);
+  assert.match(visibilitySource, /\*\*\*\*\*/);
+  assert.match(visibilitySource, /FinanceVisibilityToggle/);
+  assert.match(sectionSource, /FinanceVisibilityProvider/);
+  assert.match(sectionSource, /FinanceVisibilityToggle/);
+  assert.match(sectionSource, /FinanceSensitiveAmount/);
+  assert.match(formSource, /FinanceSensitiveAmount/);
+  assert.match(trendSource, /FinanceSensitiveAmount/);
+  assert.match(allocationSource, /FinanceSensitiveAmount/);
 
   console.log("PASS finance market pricing primitives");
 }

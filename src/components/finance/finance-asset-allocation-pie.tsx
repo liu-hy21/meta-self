@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { FinanceSensitiveAmount } from "@/components/finance/finance-visibility";
 import { splitCnyMinor, type AssetAllocationSlice } from "@/lib/finance-holdings";
 
 const SIZE = 200;
@@ -16,11 +17,10 @@ export function FinanceAssetAllocationPie({ slices }: { slices: AssetAllocationS
   const visible = slices.filter((s) => s.cnyMinor > 0);
   const focused = slices.find((s) => s.key === active) ?? null;
 
-  let offset = 0;
-  const arcs = visible.map((slice) => {
+  const arcs = visible.map((slice, index) => {
+    const offset = visible.slice(0, index).reduce((sum, item) => sum + (item.cnyMinor / total) * CIRCUMFERENCE, 0);
     const length = (slice.cnyMinor / total) * CIRCUMFERENCE;
     const arc = { slice, offset, length: Math.max(length - (visible.length > 1 ? GAP : 0), 0.5) };
-    offset += length;
     return arc;
   });
 
@@ -65,7 +65,7 @@ export function FinanceAssetAllocationPie({ slices }: { slices: AssetAllocationS
         </svg>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
           <span className="text-[11px] tracking-[0.2em] text-[var(--muted)]">{focused ? focused.label : "总资产"}</span>
-          <span className="mt-1 text-lg font-semibold tabular-nums text-[var(--ink)]">¥{integer}</span>
+          <FinanceSensitiveAmount className="mt-1 text-lg font-semibold tabular-nums text-[var(--ink)]">¥{integer}</FinanceSensitiveAmount>
           {centerPct ? <span className="text-xs tabular-nums text-[var(--gold-deep)]">{centerPct}</span> : null}
         </div>
       </div>
@@ -100,7 +100,7 @@ export function FinanceAssetAllocationPie({ slices }: { slices: AssetAllocationS
                   />
                 </div>
                 <p className="mt-1 text-right text-[11px] tabular-nums text-[var(--muted)]">
-                  ¥{splitCnyMinor(slice.cnyMinor).integer}
+                  <FinanceSensitiveAmount>¥{splitCnyMinor(slice.cnyMinor).integer}</FinanceSensitiveAmount>
                 </p>
               </button>
             </li>

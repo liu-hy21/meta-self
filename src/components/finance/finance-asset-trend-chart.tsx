@@ -3,6 +3,7 @@
 import { useId, useState } from "react";
 
 import { splitCnyMinor } from "@/lib/finance-holdings";
+import { FinanceSensitiveAmount, useFinanceVisibility } from "@/components/finance/finance-visibility";
 
 export type AssetTrendPoint = {
   date: string;
@@ -66,6 +67,7 @@ export function FinanceAssetTrendChart({ points }: { points: AssetTrendPoint[] }
   const gradientId = useId();
   const [range, setRange] = useState<RangeKey>("all");
   const [hover, setHover] = useState<number | null>(null);
+  const { visible } = useFinanceVisibility();
 
   const sorted = [...points].sort((a, b) => a.date.localeCompare(b.date));
   const latestTime = sorted.length > 0 ? new Date(sorted[sorted.length - 1].date).getTime() : 0;
@@ -157,7 +159,9 @@ export function FinanceAssetTrendChart({ points }: { points: AssetTrendPoint[] }
         </span>
         {data.length > 1 ? (
           <span className={`text-sm font-medium tabular-nums ${up ? "text-[#4d7a66]" : "text-[#b3644d]"}`}>
-            {up ? "▲" : "▼"} ¥{splitCnyMinor(Math.abs(change)).integer}（{up ? "+" : "-"}
+            <FinanceSensitiveAmount>
+              {up ? "▲" : "▼"} ¥{splitCnyMinor(Math.abs(change)).integer}
+            </FinanceSensitiveAmount>（{up ? "+" : "-"}
             {Math.abs(changePct).toFixed(2)}%）
           </span>
         ) : null}
@@ -191,7 +195,7 @@ export function FinanceAssetTrendChart({ points }: { points: AssetTrendPoint[] }
                 strokeDasharray="3 5"
               />
               <text x={W - PAD.right} y={yAt(v) - 6} textAnchor="end" className="fill-[var(--muted)] text-[10px]">
-                {compactYuan(v)}
+                {visible ? compactYuan(v) : "*****"}
               </text>
             </g>
           ))}
@@ -240,8 +244,10 @@ export function FinanceAssetTrendChart({ points }: { points: AssetTrendPoint[] }
           >
             <p className="opacity-70">{fullDate(hovered.date)}</p>
             <p className="mt-0.5 text-sm font-semibold tabular-nums">
-              ¥{splitCnyMinor(hovered.totalCnyMinor).integer}
-              <span className="opacity-60">.{splitCnyMinor(hovered.totalCnyMinor).decimal}</span>
+              <FinanceSensitiveAmount>
+                ¥{splitCnyMinor(hovered.totalCnyMinor).integer}
+                <span className="opacity-60">.{splitCnyMinor(hovered.totalCnyMinor).decimal}</span>
+              </FinanceSensitiveAmount>
             </p>
           </div>
         ) : null}
