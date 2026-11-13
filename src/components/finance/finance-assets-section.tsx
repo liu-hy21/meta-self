@@ -432,7 +432,7 @@ export function FinanceAssetsSection({
         <section className={`${card} p-6 sm:p-7`}>
           <FinanceAssetTrendChart points={trendPoints} />
         </section>
-        <FinanceAssetMetricsDashboard metrics={assetMetrics} compact />
+        <FinanceAssetMetricsDashboard metrics={assetMetrics} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2 lg:items-start">

@@ -41,8 +41,9 @@ async function main() {
 
   assert.match(metricsSource, /绝对上限/);
   assert.match(metricsSource, /流动现金/);
-  assert.match(metricsSource, /FinanceAssetAllocationPie/);
-  assert.match(metricsSource, /aria-pressed/);
+  assert.doesNotMatch(metricsSource, /FinanceAssetAllocationPie/);
+  assert.doesNotMatch(metricsSource, /问题资产/);
+  assert.doesNotMatch(metricsSource, /LIMIT CHECK/);
   assert.match(metricLogicSource, /FINANCE_EMERGENCY_CASH_FLOOR_CNY_MINOR/);
   assert.match(metricLogicSource, /ABSOLUTE_LIMITS/);
   assert.match(metricLogicSource, /overLimitCount/);
