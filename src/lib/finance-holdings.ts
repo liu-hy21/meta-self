@@ -36,6 +36,11 @@ const usdSchwabBase = {
   schwabGroup: true,
 };
 
+const usdMarketPrice = {
+  marketPriceSource: "ninequant" as const,
+  marketPriceCurrency: "USD" as const,
+};
+
 export const schwabHoldingConfigs: HoldingConfig[] = [
   {
     account: "SCHWAB_OTHER",
@@ -48,6 +53,7 @@ export const schwabHoldingConfigs: HoldingConfig[] = [
     label: "GOOG",
     formKey: "schwabGoog",
     ...usdSchwabBase,
+    ...usdMarketPrice,
     inputKind: "shares",
     priceSymbol: "GOOG",
   },
@@ -56,6 +62,7 @@ export const schwabHoldingConfigs: HoldingConfig[] = [
     label: "AAPL",
     formKey: "schwabAapl",
     ...usdSchwabBase,
+    ...usdMarketPrice,
     inputKind: "shares",
     priceSymbol: "AAPL",
   },
@@ -64,6 +71,7 @@ export const schwabHoldingConfigs: HoldingConfig[] = [
     label: "MSFT",
     formKey: "schwabMsft",
     ...usdSchwabBase,
+    ...usdMarketPrice,
     inputKind: "shares",
     priceSymbol: "MSFT",
   },
@@ -72,6 +80,7 @@ export const schwabHoldingConfigs: HoldingConfig[] = [
     label: "AMZN",
     formKey: "schwabAmzn",
     ...usdSchwabBase,
+    ...usdMarketPrice,
     inputKind: "shares",
     priceSymbol: "AMZN",
   },
@@ -80,6 +89,7 @@ export const schwabHoldingConfigs: HoldingConfig[] = [
     label: "META",
     formKey: "schwabMeta",
     ...usdSchwabBase,
+    ...usdMarketPrice,
     inputKind: "shares",
     priceSymbol: "META",
   },
@@ -88,6 +98,7 @@ export const schwabHoldingConfigs: HoldingConfig[] = [
     label: "MCD",
     formKey: "schwabMcd",
     ...usdSchwabBase,
+    ...usdMarketPrice,
     inputKind: "shares",
     priceSymbol: "MCD",
   },
@@ -96,6 +107,7 @@ export const schwabHoldingConfigs: HoldingConfig[] = [
     label: "COKE",
     formKey: "schwabCoke",
     ...usdSchwabBase,
+    ...usdMarketPrice,
     inputKind: "shares",
     priceSymbol: "COKE",
   },
@@ -104,6 +116,7 @@ export const schwabHoldingConfigs: HoldingConfig[] = [
     label: "QQQ",
     formKey: "schwabQqq",
     ...usdSchwabBase,
+    ...usdMarketPrice,
     inputKind: "shares",
     priceSymbol: "QQQ",
   },
@@ -112,6 +125,7 @@ export const schwabHoldingConfigs: HoldingConfig[] = [
     label: "VOO",
     formKey: "schwabVoo",
     ...usdSchwabBase,
+    ...usdMarketPrice,
     inputKind: "shares",
     priceSymbol: "VOO",
   },

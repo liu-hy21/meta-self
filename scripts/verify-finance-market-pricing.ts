@@ -6,6 +6,7 @@ import {
   allocationOrder,
   computeAllocationCnyMinor,
   financeHoldingConfigs,
+  isMarketPricedHolding,
   schwabHoldingConfigs,
   validateFinanceHoldingsForm,
 } from "../src/lib/finance-holdings";
@@ -121,6 +122,7 @@ async function main() {
   for (const symbol of technologySymbols) {
     const config = financeHoldingConfigs.find((item) => item.priceSymbol === symbol);
     assert.equal(config?.inputKind, "shares");
+    assert.equal(isMarketPricedHolding(config!), true);
     assert.equal(config?.label, symbol);
     assert.equal(config?.formKey, `schwab${symbol[0]}${symbol.slice(1).toLowerCase()}`);
     formData.set(config?.formKey ?? "", "1");
@@ -138,6 +140,7 @@ async function main() {
   for (const symbol of consumerSymbols) {
     const config = financeHoldingConfigs.find((item) => item.priceSymbol === symbol);
     assert.equal(config?.inputKind, "shares");
+    assert.equal(isMarketPricedHolding(config!), true);
     assert.equal(config?.label, symbol);
     assert.equal(config?.formKey, `schwab${symbol[0]}${symbol.slice(1).toLowerCase()}`);
     formData.set(config?.formKey ?? "", "1");
@@ -150,6 +153,14 @@ async function main() {
       assert.equal(consumerValidation.quantities.get(config!.account), 100);
     }
   }
+
+  for (const symbol of ["QQQ", "VOO"]) {
+    const config = financeHoldingConfigs.find((item) => item.priceSymbol === symbol);
+    assert.equal(config?.inputKind, "shares");
+    assert.equal(isMarketPricedHolding(config!), true);
+  }
+  const gold = financeHoldingConfigs.find((item) => item.account === "GOLD");
+  assert.equal(isMarketPricedHolding(gold!), true);
 
   assert.deepEqual(
     allocationOrder.map((slice) => [slice.key, slice.label, slice.color]),
