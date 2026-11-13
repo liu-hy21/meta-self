@@ -5,6 +5,9 @@ async function main() {
   const tabsSource = await readFile("src/components/finance/finance-analysis-tabs.tsx", "utf8");
   const pageSource = await readFile("src/app/(main)/finance/analysis/page.tsx", "utf8");
   const viewSource = await readFile("src/components/finance/finance-analysis-view.tsx", "utf8");
+  const assetsSource = await readFile("src/components/finance/finance-assets-section.tsx", "utf8");
+  const topBarSource = await readFile("src/components/shell/top-bar.tsx", "utf8");
+  const leftRailSource = await readFile("src/components/shell/left-rail.tsx", "utf8");
 
   assert.match(tabsSource, /export type FinanceAnalysisView\s*=\s*"signals"\s*\|\s*"metrics"\s*\|\s*"ai"/);
   assert.match(tabsSource, /市场信号分析/);
@@ -34,6 +37,16 @@ async function main() {
   assert.match(viewSource, /待计算/);
   assert.match(viewSource, /AI 报告待生成/);
   assert.doesNotMatch(viewSource, /\bfetch\s*\(/);
+
+  assert.match(assetsSource, /href="\/finance\/analysis\?view=signals"/);
+  assert.match(assetsSource, /数据分析/);
+  assert.match(assetsSource, /FinanceVisibilityProvider/);
+  assert.match(assetsSource, /FinanceVisibilityToggle/);
+  assert.match(topBarSource, /pathname\.startsWith\("\/finance\/analysis"\)/);
+  assert.match(topBarSource, /财商 · 数据分析/);
+  assert.match(leftRailSource, /pathname\.startsWith\("\/finance\/analysis"\)/);
+  assert.match(leftRailSource, /const financeOpen =/);
+  assert.match(leftRailSource, /active=\{financeOpen\}/);
 
   console.log("PASS finance asset analysis tabs");
 }

@@ -407,7 +407,15 @@ export function FinanceAssetsSection({
 
         <div className="p-7 sm:p-8">
           <p className={eyebrow}>ALLOCATION</p>
-          <h3 className="mb-6 mt-1 text-base font-semibold text-[var(--ink)]">资产结构</h3>
+          <div className="mb-6 mt-1 flex items-center justify-between gap-3">
+            <h3 className="text-base font-semibold text-[var(--ink)]">资产结构</h3>
+            <Link
+              href="/finance/analysis?view=signals"
+              className="inline-flex h-8 items-center border border-[var(--ink)]/20 px-2.5 text-xs text-[var(--ink)] transition-colors hover:border-[var(--ink)] hover:bg-[var(--gold)]"
+            >
+              数据分析
+            </Link>
+          </div>
           <FinanceAssetAllocationPie slices={slices} />
         </div>
       </section>

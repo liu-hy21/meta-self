@@ -56,6 +56,7 @@ function titleFor(pathname: string) {
   if (pathname.startsWith("/relation/chat/")) return "关系 · 原文";
   if (pathname.startsWith("/relation/persona/")) return "关系 · 角色模拟";
   if (pathname.startsWith("/relation/analysis/")) return pathname.endsWith("/ai") ? "关系 · AI 分析" : "关系 · 数据分析";
+  if (pathname.startsWith("/finance/analysis")) return "财商 · 数据分析";
   return titles[pathname] ?? "身体";
 }
 

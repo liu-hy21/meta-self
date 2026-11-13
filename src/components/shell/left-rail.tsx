@@ -93,7 +93,8 @@ export function LeftRail({ items }: { items: BodyNavItem[] }) {
   const profile = byKey.get("profile");
   const logAttention = items.some((item) => item.key !== "today" && item.key !== "profile" && item.status === "attention");
   const englishOpen = pathname.startsWith(englishHref);
-  const playOpen = pathname.startsWith(financeProfileHref) || pathname.startsWith(playHref) || englishOpen;
+  const financeOpen = pathname.startsWith(financeProfileHref) || pathname.startsWith("/finance/analysis");
+  const playOpen = financeOpen || pathname.startsWith(playHref) || englishOpen;
   const relationOpen = pathname.startsWith("/relation/");
   const profileOpen =
     pathname.startsWith("/body/profile") ||
@@ -162,7 +163,7 @@ export function LeftRail({ items }: { items: BodyNavItem[] }) {
           attention={false}
           onToggle={() => toggle("play")}
         >
-          <RailLink href={financeProfileHref} label="财商" active={pathname.startsWith(financeProfileHref)} nested />
+          <RailLink href={financeProfileHref} label="财商" active={financeOpen} nested />
           <RailLink href={playHref} label="玩商" active={pathname.startsWith(playHref)} nested />
           <Group
             label="英语"
