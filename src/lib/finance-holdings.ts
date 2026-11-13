@@ -308,12 +308,12 @@ export type AssetAllocationSlice = {
 export const allocationOrder: AssetAllocationSlice[] = [
   { key: "satellite", label: "高波动层", cnyMinor: 0, color: "#C62828" },
   { key: "tech", label: "科技防守层", cnyMinor: 0, color: "#EF6C00" },
-  { key: "hedge", label: "防御层", cnyMinor: 0, color: "#C9A227" },
+  { key: "hedge", label: "消费防守层", cnyMinor: 0, color: "#C9A227" },
   { key: "broad", label: "压舱层", cnyMinor: 0, color: "#1E5AA8" },
   { key: "cash", label: "安全层", cnyMinor: 0, color: "#2E7D32" },
 ];
 
-/** 按风险从高到低：卫星、科技成长、防御对冲、宽基压舱、现金安全垫。 */
+/** 按风险从高到低：卫星、科技防守、消费防守、宽基压舱、现金安全垫。 */
 export function computeAllocationCnyMinor(
   amounts: Map<FinanceHoldingAccount, number>,
 ): AssetAllocationSlice[] {

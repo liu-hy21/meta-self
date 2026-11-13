@@ -167,7 +167,7 @@ async function main() {
     [
       ["satellite", "高波动层", "#C62828"],
       ["tech", "科技防守层", "#EF6C00"],
-      ["hedge", "防御层", "#C9A227"],
+      ["hedge", "消费防守层", "#C9A227"],
       ["broad", "压舱层", "#1E5AA8"],
       ["cash", "安全层", "#2E7D32"],
     ],
