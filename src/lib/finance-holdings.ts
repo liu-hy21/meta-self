@@ -4,7 +4,8 @@ export const USD_TO_CNY = 7.4;
 export const HKD_TO_CNY = 0.94;
 
 export type HoldingRegion = "overseas" | "domestic";
-export type HoldingInputKind = "amount" | "shares";
+export type HoldingInputKind = "amount" | "shares" | "weight";
+export type FinancePriceSymbol = "QQQ" | "VOO" | "GOOG" | "AAPL" | "MSFT" | "AMZN" | "META" | "MCD" | "COKE";
 
 export type HoldingConfig = {
   account: FinanceHoldingAccount;
@@ -17,7 +18,9 @@ export type HoldingConfig = {
   formKey: string;
   decimals: number;
   inputKind: HoldingInputKind;
-  priceSymbol?: "QQQ" | "VOO";
+  priceSymbol?: FinancePriceSymbol;
+  marketPriceSource?: "ninequant" | "goldprice";
+  marketPriceCurrency?: "USD" | "CNY";
   /** 归入 SCHWAB 分组展示 */
   schwabGroup?: boolean;
 };
@@ -35,6 +38,68 @@ const usdSchwabBase = {
 
 export const schwabHoldingConfigs: HoldingConfig[] = [
   {
+    account: "SCHWAB_OTHER",
+    label: "其他资产",
+    formKey: "schwabOther",
+    ...usdSchwabBase,
+  },
+  {
+    account: "SCHWAB_GOOG",
+    label: "GOOG",
+    formKey: "schwabGoog",
+    ...usdSchwabBase,
+    inputKind: "shares",
+    priceSymbol: "GOOG",
+  },
+  {
+    account: "SCHWAB_AAPL",
+    label: "AAPL",
+    formKey: "schwabAapl",
+    ...usdSchwabBase,
+    inputKind: "shares",
+    priceSymbol: "AAPL",
+  },
+  {
+    account: "SCHWAB_MSFT",
+    label: "MSFT",
+    formKey: "schwabMsft",
+    ...usdSchwabBase,
+    inputKind: "shares",
+    priceSymbol: "MSFT",
+  },
+  {
+    account: "SCHWAB_AMZN",
+    label: "AMZN",
+    formKey: "schwabAmzn",
+    ...usdSchwabBase,
+    inputKind: "shares",
+    priceSymbol: "AMZN",
+  },
+  {
+    account: "SCHWAB_META",
+    label: "META",
+    formKey: "schwabMeta",
+    ...usdSchwabBase,
+    inputKind: "shares",
+    priceSymbol: "META",
+  },
+  {
+    account: "SCHWAB_MCD",
+    label: "MCD",
+    formKey: "schwabMcd",
+    ...usdSchwabBase,
+    inputKind: "shares",
+    priceSymbol: "MCD",
+  },
+  {
+    account: "SCHWAB_COKE",
+    label: "COKE",
+    formKey: "schwabCoke",
+    ...usdSchwabBase,
+    inputKind: "shares",
+    priceSymbol: "COKE",
+  },
+  {
     account: "SCHWAB_QQQ",
     label: "QQQ",
     formKey: "schwabQqq",
@@ -49,12 +114,6 @@ export const schwabHoldingConfigs: HoldingConfig[] = [
     ...usdSchwabBase,
     inputKind: "shares",
     priceSymbol: "VOO",
-  },
-  {
-    account: "SCHWAB_OTHER",
-    label: "其他资产",
-    formKey: "schwabOther",
-    ...usdSchwabBase,
   },
   {
     account: "SCHWAB_CASH",
@@ -74,29 +133,6 @@ export const financeHoldingConfigs: HoldingConfig[] = [
     currencyLabel: "港币",
     rateToCny: HKD_TO_CNY,
     formKey: "hkCard",
-    decimals: 2,
-    inputKind: "amount",
-  },
-  {
-    account: "BANK_CARD",
-    label: "银行卡",
-    region: "domestic",
-    regionTitle: "国内",
-    currency: "CNY",
-    currencyLabel: "人民币",
-    rateToCny: 1,
-    formKey: "bankCard",
-    decimals: 2,
-    inputKind: "amount",
-  },
-  {
-    account: "ALIPAY",
-    label: "支付宝",
-    region: "domestic",
-    currency: "CNY",
-    currencyLabel: "人民币",
-    rateToCny: 1,
-    formKey: "alipay",
     decimals: 2,
     inputKind: "amount",
   },
@@ -122,6 +158,53 @@ export const financeHoldingConfigs: HoldingConfig[] = [
     decimals: 2,
     inputKind: "amount",
   },
+  {
+    account: "GOLD",
+    label: "黄金",
+    region: "domestic",
+    currency: "CNY",
+    currencyLabel: "人民币",
+    rateToCny: 1,
+    formKey: "gold",
+    decimals: 2,
+    inputKind: "weight",
+    marketPriceSource: "goldprice",
+    marketPriceCurrency: "CNY",
+  },
+  {
+    account: "BANK_CARD",
+    label: "银行卡",
+    region: "domestic",
+    regionTitle: "国内",
+    currency: "CNY",
+    currencyLabel: "人民币",
+    rateToCny: 1,
+    formKey: "bankCard",
+    decimals: 2,
+    inputKind: "amount",
+  },
+  {
+    account: "ALIPAY",
+    label: "支付宝",
+    region: "domestic",
+    currency: "CNY",
+    currencyLabel: "人民币",
+    rateToCny: 1,
+    formKey: "alipay",
+    decimals: 2,
+    inputKind: "amount",
+  },
+  {
+    account: "HOUSING_FUND",
+    label: "住房公积金",
+    region: "domestic",
+    currency: "CNY",
+    currencyLabel: "人民币",
+    rateToCny: 1,
+    formKey: "housingFund",
+    decimals: 2,
+    inputKind: "amount",
+  },
 ];
 
 const configByAccount = new Map(financeHoldingConfigs.map((c) => [c.account, c]));
@@ -142,7 +225,25 @@ export function holdingAccountLabel(account: FinanceHoldingAccount) {
 }
 
 export function isMarketPricedHolding(config: HoldingConfig) {
-  return config.inputKind === "shares" && config.priceSymbol != null;
+  return config.inputKind !== "amount" && config.marketPriceSource != null && config.marketPriceCurrency != null;
+}
+
+export function isTechDefenseHolding(config: HoldingConfig) {
+  return (
+    config.priceSymbol === "GOOG" ||
+    config.priceSymbol === "AAPL" ||
+    config.priceSymbol === "MSFT" ||
+    config.priceSymbol === "AMZN" ||
+    config.priceSymbol === "META"
+  );
+}
+
+export function isConsumerDefenseHolding(config: HoldingConfig) {
+  return config.priceSymbol === "MCD" || config.priceSymbol === "COKE";
+}
+
+export function isDefenseHolding(config: HoldingConfig) {
+  return isTechDefenseHolding(config) || isConsumerDefenseHolding(config);
 }
 
 export function amountMinorToDisplay(amountMinor: number, currency: HoldingConfig["currency"]) {
@@ -181,7 +282,7 @@ export function computeTotalCnyMinor(amounts: Map<FinanceHoldingAccount, number>
   return total;
 }
 
-export type AssetAllocationKey = "cash" | "qqq" | "voo" | "risk";
+export type AssetAllocationKey = "satellite" | "tech" | "hedge" | "broad" | "cash";
 
 export type AssetAllocationSlice = {
   key: AssetAllocationKey;
@@ -191,13 +292,14 @@ export type AssetAllocationSlice = {
 };
 
 export const allocationOrder: AssetAllocationSlice[] = [
-  { key: "cash", label: "现金资产", cnyMinor: 0, color: "#7f9c94" },
-  { key: "qqq", label: "QQQ", cnyMinor: 0, color: "#c29a5b" },
-  { key: "voo", label: "VOO", cnyMinor: 0, color: "#5f4b3a" },
-  { key: "risk", label: "风险资产", cnyMinor: 0, color: "#b3644d" },
+  { key: "satellite", label: "高波动层", cnyMinor: 0, color: "#C62828" },
+  { key: "tech", label: "科技防守层", cnyMinor: 0, color: "#EF6C00" },
+  { key: "hedge", label: "防御层", cnyMinor: 0, color: "#C9A227" },
+  { key: "broad", label: "压舱层", cnyMinor: 0, color: "#1E5AA8" },
+  { key: "cash", label: "安全层", cnyMinor: 0, color: "#2E7D32" },
 ];
 
-/** 现金：银行卡、支付宝、港卡、SCHWAB 现金；风险：SCHWAB 其他、东方财富、BN；QQQ/VOO 单独 */
+/** 按风险从高到低：卫星、科技成长、防御对冲、宽基压舱、现金安全垫。 */
 export function computeAllocationCnyMinor(
   amounts: Map<FinanceHoldingAccount, number>,
 ): AssetAllocationSlice[] {
@@ -205,29 +307,51 @@ export function computeAllocationCnyMinor(
   const toCny = (account: FinanceHoldingAccount) =>
     holdingToCnyMinor(minorForAccount(amounts, account), cfg(account));
 
+  const satellite =
+    toCny("SCHWAB_OTHER") +
+    toCny("EASTMONEY") +
+    toCny("BN");
+  const tech =
+    toCny("SCHWAB_GOOG") +
+    toCny("SCHWAB_AAPL") +
+    toCny("SCHWAB_MSFT") +
+    toCny("SCHWAB_AMZN") +
+    toCny("SCHWAB_META");
+  const hedge =
+    toCny("SCHWAB_MCD") +
+    toCny("SCHWAB_COKE") +
+    toCny("GOLD");
+  const broad = toCny("SCHWAB_QQQ") + toCny("SCHWAB_VOO");
   const cash =
     toCny("BANK_CARD") +
     toCny("ALIPAY") +
     toCny("HK_CARD") +
-    toCny("SCHWAB_CASH");
-  const qqq = toCny("SCHWAB_QQQ");
-  const voo = toCny("SCHWAB_VOO");
-  const risk = toCny("SCHWAB_OTHER") + toCny("EASTMONEY") + toCny("BN");
+    toCny("SCHWAB_CASH") +
+    toCny("HOUSING_FUND");
 
-  const values: Record<AssetAllocationKey, number> = { cash, qqq, voo, risk };
+  const values: Record<AssetAllocationKey, number> = { satellite, tech, hedge, broad, cash };
   return allocationOrder.map((meta) => ({ ...meta, cnyMinor: values[meta.key] }));
 }
 
 const allocationKeyByAccount: Record<FinanceHoldingAccount, AssetAllocationKey> = {
-  SCHWAB_QQQ: "qqq",
-  SCHWAB_VOO: "voo",
-  SCHWAB_OTHER: "risk",
+  SCHWAB_QQQ: "broad",
+  SCHWAB_VOO: "broad",
+  SCHWAB_GOOG: "tech",
+  SCHWAB_AAPL: "tech",
+  SCHWAB_MSFT: "tech",
+  SCHWAB_AMZN: "tech",
+  SCHWAB_META: "tech",
+  SCHWAB_MCD: "hedge",
+  SCHWAB_COKE: "hedge",
+  SCHWAB_OTHER: "satellite",
   SCHWAB_CASH: "cash",
   HK_CARD: "cash",
   BANK_CARD: "cash",
   ALIPAY: "cash",
-  EASTMONEY: "risk",
-  BN: "risk",
+  EASTMONEY: "satellite",
+  BN: "satellite",
+  HOUSING_FUND: "cash",
+  GOLD: "hedge",
 };
 
 export function accountAllocation(account: FinanceHoldingAccount) {
@@ -299,7 +423,7 @@ export function validateFinanceHoldingsForm(formData: FormData): FinanceHoldings
     }
     const factor = 10 ** config.decimals;
     const minor = Math.round(value * factor);
-    if (config.inputKind === "shares") quantities.set(config.account, minor);
+    if (config.inputKind !== "amount") quantities.set(config.account, minor);
     else amounts.set(config.account, minor);
   }
 

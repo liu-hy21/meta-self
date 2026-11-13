@@ -11,7 +11,9 @@ import {
   domesticHoldings,
   financeHoldingConfigs,
   holdingToCnyMinor,
+  isConsumerDefenseHolding,
   isMarketPricedHolding,
+  isTechDefenseHolding,
   overseasHoldings,
   schwabHoldingConfigs,
   splitCnyMinor,
@@ -28,8 +30,9 @@ function parseMinor(raw: string) {
   return Math.round(value * 100);
 }
 
-function formatUsdMinor(minor: number) {
-  return `$${(minor / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+function formatMarketPriceMinor(minor: number, currency: "USD" | "CNY") {
+  const symbol = currency === "CNY" ? "¥" : "$";
+  return `${symbol}${(minor / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 function formatPriceDate(date: Date | null) {
@@ -41,13 +44,15 @@ function HoldingField({
   config,
   value,
   onChange,
-  priceUsdMinor,
+  marketPriceMinor,
+  marketPriceCurrency,
   priceFetchedAt,
 }: {
   config: HoldingConfig;
   value: string;
   onChange: (v: string) => void;
-  priceUsdMinor: number | null;
+  marketPriceMinor: number | null;
+  marketPriceCurrency: "USD" | "CNY" | null;
   priceFetchedAt: Date | null;
 }) {
   const allocation = accountAllocation(config.account);
@@ -58,8 +63,8 @@ function HoldingField({
     inputMinor == null
       ? null
       : marketPriced
-        ? priceUsdMinor != null
-          ? sharesToAmountMinor(inputMinor, priceUsdMinor)
+        ? marketPriceMinor != null
+          ? sharesToAmountMinor(inputMinor, marketPriceMinor)
           : null
         : inputMinor;
   const cnyMinor = amountMinor == null ? null : holdingToCnyMinor(amountMinor, config);
@@ -73,8 +78,8 @@ function HoldingField({
         </span>
         <span className="mt-0.5 block text-[11px] text-[var(--muted)]">
           {marketPriced
-            ? priceUsdMinor != null
-              ? `${formatUsdMinor(priceUsdMinor)} · ${formatPriceDate(priceFetchedAt)} · ≈ ¥${splitCnyMinor(cnyMinor ?? 0).integer}`
+            ? marketPriceMinor != null
+              ? `${formatMarketPriceMinor(marketPriceMinor, marketPriceCurrency ?? "USD")} · ${formatPriceDate(priceFetchedAt)} · ≈ ¥${splitCnyMinor(cnyMinor ?? 0).integer}`
               : "价格将在保存时更新"
             : `${config.currencyLabel}${config.currency !== "CNY" && cnyMinor != null ? ` · ≈ ¥${splitCnyMinor(cnyMinor).integer}` : ""}`}
         </span>
@@ -84,7 +89,9 @@ function HoldingField({
           empty ? "border-[#b3644d]/40" : "border-[var(--ink)]/12"
         }`}
       >
-        <span className="text-sm text-[var(--muted)]">{marketPriced ? "股" : currencySymbol[config.currency]}</span>
+        <span className="text-sm text-[var(--muted)]">
+          {config.inputKind === "weight" ? "克" : marketPriced ? "股" : currencySymbol[config.currency]}
+        </span>
         <input
           name={config.formKey}
           type="number"
@@ -95,7 +102,13 @@ function HoldingField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           onInvalid={(e) =>
-            e.currentTarget.setCustomValidity(marketPriced ? "请填写股数，没有持仓可填 0" : "请填写该账户金额，没有余额可填 0")
+            e.currentTarget.setCustomValidity(
+              config.inputKind === "weight"
+                ? "请填写克数，没有持仓可填 0"
+                : marketPriced
+                  ? "请填写股数，没有持仓可填 0"
+                  : "请填写该账户金额，没有余额可填 0",
+            )
           }
           onInput={(e) => e.currentTarget.setCustomValidity("")}
           className="h-10 w-full min-w-0 bg-transparent pl-2 text-right text-sm tabular-nums text-[var(--ink)] outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
@@ -124,6 +137,7 @@ export function FinanceHoldingsForm({
   initial,
   initialQuantities,
   marketPrices,
+  marketPriceCurrencies,
   priceFetchedAt,
   error,
   notice,
@@ -132,6 +146,7 @@ export function FinanceHoldingsForm({
   initial: Record<string, number>;
   initialQuantities: Record<string, number | null>;
   marketPrices: Record<string, number | null>;
+  marketPriceCurrencies: Record<string, "USD" | "CNY" | null>;
   priceFetchedAt: Record<string, Date | null>;
   error?: FinanceFormError;
   notice?: "stale-price";
@@ -172,6 +187,16 @@ export function FinanceHoldingsForm({
   ).reduce((s, x) => s + x.cnyMinor, 0);
   const diff = total - initialTotal;
   const complete = filled === financeHoldingConfigs.length;
+  const techDefenseHoldings = schwabHoldingConfigs.filter(isTechDefenseHolding);
+  const techDefenseCny = techDefenseHoldings.reduce(
+    (sum, config) => sum + holdingToCnyMinor(amounts.get(config.account) ?? 0, config),
+    0,
+  );
+  const consumerDefenseHoldings = schwabHoldingConfigs.filter(isConsumerDefenseHolding);
+  const consumerDefenseCny = consumerDefenseHoldings.reduce(
+    (sum, config) => sum + holdingToCnyMinor(amounts.get(config.account) ?? 0, config),
+    0,
+  );
   const { integer, decimal } = splitCnyMinor(total);
 
   return (
@@ -196,13 +221,86 @@ export function FinanceHoldingsForm({
           <div className="bg-[var(--ink)]/[0.02] px-5 pb-1 pt-3 text-[11px] font-semibold tracking-[0.2em] text-[var(--muted)]">
             SCHWAB
           </div>
-          {schwabHoldingConfigs.map((c) => (
+          {schwabHoldingConfigs.filter((c) => c.account === "SCHWAB_OTHER").map((c) => (
             <HoldingField
               key={c.account}
               config={c}
               value={values[c.formKey]}
               onChange={set(c.formKey)}
-              priceUsdMinor={marketPrices[c.account] ?? null}
+              marketPriceMinor={marketPrices[c.account] ?? null}
+              marketPriceCurrency={marketPriceCurrencies[c.account] ?? null}
+              priceFetchedAt={priceFetchedAt[c.account] ?? null}
+            />
+          ))}
+          <details className="border-t border-[var(--ink)]/[0.06] px-5 py-3.5">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm text-[var(--ink)] [&::-webkit-details-marker]:hidden">
+              <span className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#b3644d]" aria-hidden />
+                科技防守层
+              </span>
+              <span className="text-xs tabular-nums text-[var(--muted)]">
+                {techDefenseHoldings.length} 项 · ≈ ¥{splitCnyMinor(techDefenseCny).integer} <span aria-hidden>⌄</span>
+              </span>
+            </summary>
+            <div className="-mx-5 mt-3 divide-y divide-[var(--ink)]/[0.06] border-t border-[var(--ink)]/[0.06]">
+              {techDefenseHoldings.map((c) => (
+                <HoldingField
+                  key={c.account}
+                  config={c}
+                  value={values[c.formKey]}
+                  onChange={set(c.formKey)}
+                  marketPriceMinor={marketPrices[c.account] ?? null}
+                  marketPriceCurrency={marketPriceCurrencies[c.account] ?? null}
+                  priceFetchedAt={priceFetchedAt[c.account] ?? null}
+                />
+              ))}
+            </div>
+          </details>
+          <details className="border-t border-[var(--ink)]/[0.06] px-5 py-3.5">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm text-[var(--ink)] [&::-webkit-details-marker]:hidden">
+              <span className="flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#7f9c94]" aria-hidden />
+                消费防守层
+              </span>
+              <span className="text-xs tabular-nums text-[var(--muted)]">
+                {consumerDefenseHoldings.length} 项 · ≈ ¥{splitCnyMinor(consumerDefenseCny).integer} <span aria-hidden>⌄</span>
+              </span>
+            </summary>
+            <div className="-mx-5 mt-3 divide-y divide-[var(--ink)]/[0.06] border-t border-[var(--ink)]/[0.06]">
+              {consumerDefenseHoldings.map((c) => (
+                <HoldingField
+                  key={c.account}
+                  config={c}
+                  value={values[c.formKey]}
+                  onChange={set(c.formKey)}
+                  marketPriceMinor={marketPrices[c.account] ?? null}
+                  marketPriceCurrency={marketPriceCurrencies[c.account] ?? null}
+                  priceFetchedAt={priceFetchedAt[c.account] ?? null}
+                />
+              ))}
+            </div>
+          </details>
+          {schwabHoldingConfigs
+            .filter((c) => c.account === "SCHWAB_QQQ" || c.account === "SCHWAB_VOO")
+            .map((c) => (
+              <HoldingField
+                key={c.account}
+                config={c}
+                value={values[c.formKey]}
+                onChange={set(c.formKey)}
+                marketPriceMinor={marketPrices[c.account] ?? null}
+                marketPriceCurrency={marketPriceCurrencies[c.account] ?? null}
+                priceFetchedAt={priceFetchedAt[c.account] ?? null}
+              />
+            ))}
+          {schwabHoldingConfigs.filter((c) => c.account === "SCHWAB_CASH").map((c) => (
+            <HoldingField
+              key={c.account}
+              config={c}
+              value={values[c.formKey]}
+              onChange={set(c.formKey)}
+              marketPriceMinor={marketPrices[c.account] ?? null}
+              marketPriceCurrency={marketPriceCurrencies[c.account] ?? null}
               priceFetchedAt={priceFetchedAt[c.account] ?? null}
             />
           ))}
@@ -212,7 +310,8 @@ export function FinanceHoldingsForm({
               config={c}
               value={values[c.formKey]}
               onChange={set(c.formKey)}
-              priceUsdMinor={marketPrices[c.account] ?? null}
+              marketPriceMinor={marketPrices[c.account] ?? null}
+              marketPriceCurrency={marketPriceCurrencies[c.account] ?? null}
               priceFetchedAt={priceFetchedAt[c.account] ?? null}
             />
           ))}
@@ -225,7 +324,8 @@ export function FinanceHoldingsForm({
               config={c}
               value={values[c.formKey]}
               onChange={set(c.formKey)}
-              priceUsdMinor={marketPrices[c.account] ?? null}
+              marketPriceMinor={marketPrices[c.account] ?? null}
+              marketPriceCurrency={marketPriceCurrencies[c.account] ?? null}
               priceFetchedAt={priceFetchedAt[c.account] ?? null}
             />
           ))}

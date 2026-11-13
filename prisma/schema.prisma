@@ -28,6 +28,13 @@ enum RelationKind {
 enum FinanceHoldingAccount {
   SCHWAB_QQQ
   SCHWAB_VOO
+  SCHWAB_GOOG
+  SCHWAB_AAPL
+  SCHWAB_MSFT
+  SCHWAB_AMZN
+  SCHWAB_META
+  SCHWAB_MCD
+  SCHWAB_COKE
   SCHWAB_OTHER
   SCHWAB_CASH
   HK_CARD
@@ -35,6 +42,8 @@ enum FinanceHoldingAccount {
   ALIPAY
   EASTMONEY
   BN
+  HOUSING_FUND
+  GOLD
 }
 
 enum FinanceLiteracyKind {
@@ -493,6 +502,7 @@ model FinanceHolding {
   amountMinor Int                   @default(0)
   quantityMinor Int?
   priceUsdMinor Int?
+  priceCnyMinor Int?
   priceFetchedAt DateTime?
   updatedAt   DateTime              @updatedAt
 

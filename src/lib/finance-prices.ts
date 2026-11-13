@@ -36,6 +36,16 @@ export function parseNineQuantQuotePrice(payload: unknown) {
   return Math.round(price * 100);
 }
 
+export function parseGoldPricePerGram(payload: unknown) {
+  const body = isRecord(payload) ? payload : null;
+  const rawPrice = body?.currency === "CNY" ? body.price_gram_24k : null;
+  const price = typeof rawPrice === "string" || typeof rawPrice === "number" ? Number(rawPrice) : NaN;
+  if (!Number.isFinite(price) || price <= 0) {
+    throw new Error("Gold price response did not include a valid CNY per gram price");
+  }
+  return Math.round(price * 100);
+}
+
 export function resolveCachedFinancePrice(
   cachedPriceUsdMinor: number | null,
   cachedFetchedAt: Date | null,
@@ -96,4 +106,15 @@ export async function fetchNineQuantFinancePrice(symbol: string, fetchImpl: type
   });
   if (!response.ok) throw new Error(`NineQuantAI request failed: ${response.status}`);
   return parseNineQuantQuotePrice(await response.json());
+}
+
+export async function fetchGoldPricePerGram(fetchImpl: typeof fetch = fetch) {
+  const response = await fetchImpl("https://api.goldprice.dev/v1/carat?currency=CNY", {
+    cache: "no-store",
+    headers: {
+      accept: "application/json",
+    },
+  });
+  if (!response.ok) throw new Error(`Gold price request failed: ${response.status}`);
+  return parseGoldPricePerGram(await response.json());
 }

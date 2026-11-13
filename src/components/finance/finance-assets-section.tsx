@@ -15,7 +15,9 @@ import {
   holdingAccountLabel,
   holdingConfig,
   holdingToCnyMinor,
+  isConsumerDefenseHolding,
   isMarketPricedHolding,
+  isTechDefenseHolding,
   overseasHoldings,
   schwabHoldingConfigs,
   schwabTotalUsdMinor,
@@ -29,6 +31,7 @@ type HoldingRow = {
   amountMinor: number;
   quantityMinor: number | null;
   priceUsdMinor: number | null;
+  priceCnyMinor: number | null;
   priceFetchedAt: Date | null;
 };
 
@@ -50,7 +53,8 @@ function HoldingLine({
   amountMinor,
   totalCnyMinor,
   quantityMinor,
-  priceUsdMinor,
+  marketPriceMinor,
+  marketPriceCurrency,
   priceFetchedAt,
   label,
   indent = false,
@@ -59,7 +63,8 @@ function HoldingLine({
   amountMinor: number;
   totalCnyMinor: number;
   quantityMinor: number | null;
-  priceUsdMinor: number | null;
+  marketPriceMinor: number | null;
+  marketPriceCurrency: "USD" | "CNY" | null;
   priceFetchedAt: Date | null;
   label?: string;
   indent?: boolean;
@@ -68,6 +73,8 @@ function HoldingLine({
   const share = totalCnyMinor > 0 ? (cny / totalCnyMinor) * 100 : 0;
   const allocation = accountAllocation(config.account);
   const marketPriced = isMarketPricedHolding(config);
+  const quantityUnit = config.inputKind === "weight" ? "克" : "股";
+  const priceSymbol = marketPriceCurrency === "CNY" ? "¥" : "$";
   const priceDate = priceFetchedAt
     ? priceFetchedAt.toLocaleDateString("zh-CN", { timeZone: "Asia/Shanghai", month: "2-digit", day: "2-digit" })
     : null;
@@ -81,7 +88,7 @@ function HoldingLine({
           </p>
           <p className="mt-0.5 pl-3.5 text-[11px] text-[var(--muted)]">
             {marketPriced && quantityMinor != null
-              ? `${(quantityMinor / 100).toFixed(2)} 股 · ${priceUsdMinor != null ? `价格 $${(priceUsdMinor / 100).toFixed(2)}${priceDate ? ` · ${priceDate}` : ""}` : "等待价格"}`
+              ? `${(quantityMinor / 100).toFixed(2)} ${quantityUnit} · ${marketPriceMinor != null ? `价格 ${priceSymbol}${(marketPriceMinor / 100).toFixed(2)}${priceDate ? ` · ${priceDate}` : ""}` : "等待价格"}`
               : allocation.label === config.label
                 ? "指数 ETF"
                 : allocation.label}
@@ -252,7 +259,15 @@ export function FinanceAssetsSection({
     financeHoldingConfigs.map((config) => [config.account, holdingByAccount.get(config.account)?.quantityMinor ?? null]),
   );
   const marketPrices = Object.fromEntries(
-    financeHoldingConfigs.map((config) => [config.account, holdingByAccount.get(config.account)?.priceUsdMinor ?? null]),
+    financeHoldingConfigs.map((config) => [
+      config.account,
+      config.marketPriceCurrency === "CNY"
+        ? holdingByAccount.get(config.account)?.priceCnyMinor ?? null
+        : holdingByAccount.get(config.account)?.priceUsdMinor ?? null,
+    ]),
+  );
+  const marketPriceCurrencies = Object.fromEntries(
+    financeHoldingConfigs.map((config) => [config.account, isMarketPricedHolding(config) ? config.marketPriceCurrency ?? "USD" : null]),
   );
   const priceFetchedAt = Object.fromEntries(
     financeHoldingConfigs.map((config) => [config.account, holdingByAccount.get(config.account)?.priceFetchedAt ?? null]),
@@ -270,6 +285,7 @@ export function FinanceAssetsSection({
           initial={Object.fromEntries(amounts)}
           initialQuantities={initialQuantities}
           marketPrices={marketPrices}
+          marketPriceCurrencies={marketPriceCurrencies}
           priceFetchedAt={priceFetchedAt}
           error={assetsError}
           notice={assetsNotice}
@@ -286,6 +302,10 @@ export function FinanceAssetsSection({
   const overseasCny = sum([...schwabHoldingConfigs, ...overseasHoldings]);
   const domesticCny = sum(domesticHoldings);
   const schwabUsd = schwabTotalUsdMinor(amounts);
+  const techDefenseHoldings = schwabHoldingConfigs.filter(isTechDefenseHolding);
+  const techDefenseCny = sum(techDefenseHoldings);
+  const consumerDefenseHoldings = schwabHoldingConfigs.filter(isConsumerDefenseHolding);
+  const consumerDefenseCny = sum(consumerDefenseHoldings);
 
   const sortedPoints = [...trendPoints].sort((a, b) => a.date.localeCompare(b.date));
   const previous = sortedPoints.length >= 2 ? sortedPoints[sortedPoints.length - 2] : null;
@@ -370,14 +390,99 @@ export function FinanceAssetsSection({
               {formatNativeAmount(schwabUsd, schwabHoldingConfigs[0])}
             </span>
           </li>
-          {schwabHoldingConfigs.map((c) => (
+          {schwabHoldingConfigs.filter((c) => c.account === "SCHWAB_OTHER").map((c) => (
             <HoldingLine
               key={c.account}
               config={c}
               amountMinor={amounts.get(c.account) ?? 0}
               totalCnyMinor={totalCnyMinor}
               quantityMinor={holdingByAccount.get(c.account)?.quantityMinor ?? null}
-              priceUsdMinor={holdingByAccount.get(c.account)?.priceUsdMinor ?? null}
+              marketPriceMinor={marketPrices[c.account] ?? null}
+              marketPriceCurrency={marketPriceCurrencies[c.account] ?? null}
+              priceFetchedAt={holdingByAccount.get(c.account)?.priceFetchedAt ?? null}
+              indent
+            />
+          ))}
+          <li className="border-t border-[var(--ink)]/[0.06] py-3.5 pl-9 pr-5">
+            <details>
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm text-[var(--ink)] [&::-webkit-details-marker]:hidden">
+                <span className="flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#b3644d]" aria-hidden />
+                  科技防守层
+                </span>
+                <span className="text-xs tabular-nums text-[var(--muted)]">
+                  {techDefenseHoldings.length} 项 · <Yuan minor={techDefenseCny} /> <span aria-hidden>⌄</span>
+                </span>
+              </summary>
+              <ul className="-mx-5 mt-3 divide-y divide-[var(--ink)]/[0.05] border-t border-[var(--ink)]/[0.06]">
+                {techDefenseHoldings.map((c) => (
+                  <HoldingLine
+                    key={c.account}
+                    config={c}
+                    amountMinor={amounts.get(c.account) ?? 0}
+                    totalCnyMinor={totalCnyMinor}
+                    quantityMinor={holdingByAccount.get(c.account)?.quantityMinor ?? null}
+                    marketPriceMinor={marketPrices[c.account] ?? null}
+                    marketPriceCurrency={marketPriceCurrencies[c.account] ?? null}
+                    priceFetchedAt={holdingByAccount.get(c.account)?.priceFetchedAt ?? null}
+                    indent
+                  />
+                ))}
+              </ul>
+            </details>
+          </li>
+          <li className="border-t border-[var(--ink)]/[0.06] py-3.5 pl-9 pr-5">
+            <details>
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-sm text-[var(--ink)] [&::-webkit-details-marker]:hidden">
+                <span className="flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#7f9c94]" aria-hidden />
+                  消费防守层
+                </span>
+                <span className="text-xs tabular-nums text-[var(--muted)]">
+                  {consumerDefenseHoldings.length} 项 · <Yuan minor={consumerDefenseCny} /> <span aria-hidden>⌄</span>
+                </span>
+              </summary>
+              <ul className="-mx-5 mt-3 divide-y divide-[var(--ink)]/[0.05] border-t border-[var(--ink)]/[0.06]">
+                {consumerDefenseHoldings.map((c) => (
+                  <HoldingLine
+                    key={c.account}
+                    config={c}
+                    amountMinor={amounts.get(c.account) ?? 0}
+                    totalCnyMinor={totalCnyMinor}
+                    quantityMinor={holdingByAccount.get(c.account)?.quantityMinor ?? null}
+                    marketPriceMinor={marketPrices[c.account] ?? null}
+                    marketPriceCurrency={marketPriceCurrencies[c.account] ?? null}
+                    priceFetchedAt={holdingByAccount.get(c.account)?.priceFetchedAt ?? null}
+                    indent
+                  />
+                ))}
+              </ul>
+            </details>
+          </li>
+          {schwabHoldingConfigs
+            .filter((c) => c.account === "SCHWAB_QQQ" || c.account === "SCHWAB_VOO")
+            .map((c) => (
+              <HoldingLine
+                key={c.account}
+                config={c}
+                amountMinor={amounts.get(c.account) ?? 0}
+                totalCnyMinor={totalCnyMinor}
+                quantityMinor={holdingByAccount.get(c.account)?.quantityMinor ?? null}
+                marketPriceMinor={marketPrices[c.account] ?? null}
+                marketPriceCurrency={marketPriceCurrencies[c.account] ?? null}
+                priceFetchedAt={holdingByAccount.get(c.account)?.priceFetchedAt ?? null}
+                indent
+              />
+            ))}
+          {schwabHoldingConfigs.filter((c) => c.account === "SCHWAB_CASH").map((c) => (
+            <HoldingLine
+              key={c.account}
+              config={c}
+              amountMinor={amounts.get(c.account) ?? 0}
+              totalCnyMinor={totalCnyMinor}
+              quantityMinor={holdingByAccount.get(c.account)?.quantityMinor ?? null}
+              marketPriceMinor={marketPrices[c.account] ?? null}
+              marketPriceCurrency={marketPriceCurrencies[c.account] ?? null}
               priceFetchedAt={holdingByAccount.get(c.account)?.priceFetchedAt ?? null}
               indent
             />
@@ -389,7 +494,8 @@ export function FinanceAssetsSection({
               amountMinor={amounts.get(c.account) ?? 0}
               totalCnyMinor={totalCnyMinor}
               quantityMinor={holdingByAccount.get(c.account)?.quantityMinor ?? null}
-              priceUsdMinor={holdingByAccount.get(c.account)?.priceUsdMinor ?? null}
+              marketPriceMinor={marketPrices[c.account] ?? null}
+              marketPriceCurrency={marketPriceCurrencies[c.account] ?? null}
               priceFetchedAt={holdingByAccount.get(c.account)?.priceFetchedAt ?? null}
             />
           ))}
@@ -403,7 +509,8 @@ export function FinanceAssetsSection({
               amountMinor={amounts.get(c.account) ?? 0}
               totalCnyMinor={totalCnyMinor}
               quantityMinor={holdingByAccount.get(c.account)?.quantityMinor ?? null}
-              priceUsdMinor={holdingByAccount.get(c.account)?.priceUsdMinor ?? null}
+              marketPriceMinor={marketPrices[c.account] ?? null}
+              marketPriceCurrency={marketPriceCurrencies[c.account] ?? null}
               priceFetchedAt={holdingByAccount.get(c.account)?.priceFetchedAt ?? null}
             />
           ))}

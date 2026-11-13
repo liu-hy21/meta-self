@@ -39,7 +39,7 @@ import {
   validateFinanceHoldingsForm,
 } from "@/lib/finance-holdings";
 import type { FinanceHoldingAccount } from "@prisma/client";
-import { fetchNineQuantFinancePrice, resolveFinancePrice, sharesToAmountMinor } from "@/lib/finance-prices";
+import { fetchGoldPricePerGram, fetchNineQuantFinancePrice, resolveFinancePrice, sharesToAmountMinor } from "@/lib/finance-prices";
 import { prisma } from "@/lib/db";
 import { generateReportForUser } from "@/lib/reports/generate";
 import { generateRelationAiReport } from "@/lib/relation/ai-analysis";
@@ -366,9 +366,15 @@ export async function upsertFinanceHoldings(formData: FormData) {
   const newAmounts = new Map(validated.amounts);
   const prepared = new Map<
     FinanceHoldingAccount,
-    { amountMinor: number; quantityMinor: number | null; priceUsdMinor: number | null; priceFetchedAt: Date | null }
+    {
+      amountMinor: number;
+      quantityMinor: number | null;
+      priceUsdMinor: number | null;
+      priceCnyMinor: number | null;
+      priceFetchedAt: Date | null;
+    }
   >();
-  const fallbackSymbols: string[] = [];
+  const fallbackAssets: string[] = [];
 
   for (const config of financeHoldingConfigs) {
     const prev = byAccount.get(config.account);
@@ -377,28 +383,32 @@ export async function upsertFinanceHoldings(formData: FormData) {
         amountMinor: newAmounts.get(config.account)!,
         quantityMinor: null,
         priceUsdMinor: null,
+        priceCnyMinor: null,
         priceFetchedAt: null,
       });
       continue;
     }
 
     const quantityMinor = validated.quantities.get(config.account)!;
+    const priceCurrency = config.marketPriceCurrency ?? "USD";
+    const cachedPrice = priceCurrency === "CNY" ? prev?.priceCnyMinor ?? null : prev?.priceUsdMinor ?? null;
     const price = await resolveFinancePrice(
-      prev?.priceUsdMinor ?? null,
+      cachedPrice,
       prev?.priceFetchedAt ?? null,
-      () => fetchNineQuantFinancePrice(config.priceSymbol!),
+      () => (config.marketPriceSource === "goldprice" ? fetchGoldPricePerGram() : fetchNineQuantFinancePrice(config.priceSymbol!)),
     );
     if (price.unavailable || price.priceUsdMinor == null) {
       redirect(`/finance/profile?edit=1&assetsError=price-unavailable&asset=${encodeURIComponent(holdingAccountLabel(config.account))}`);
     }
-    if (price.usedFallback) fallbackSymbols.push(config.priceSymbol!);
+    if (price.usedFallback) fallbackAssets.push(holdingAccountLabel(config.account));
 
     const amountMinor = sharesToAmountMinor(quantityMinor, price.priceUsdMinor);
     newAmounts.set(config.account, amountMinor);
     prepared.set(config.account, {
       amountMinor,
       quantityMinor,
-      priceUsdMinor: price.priceUsdMinor,
+      priceUsdMinor: priceCurrency === "USD" ? price.priceUsdMinor : null,
+      priceCnyMinor: priceCurrency === "CNY" ? price.priceUsdMinor : null,
       priceFetchedAt: price.fetchedAt,
     });
   }
@@ -414,6 +424,7 @@ export async function upsertFinanceHoldings(formData: FormData) {
       previousMinor !== next.amountMinor ||
       prev.quantityMinor !== next.quantityMinor ||
       prev.priceUsdMinor !== next.priceUsdMinor ||
+      prev.priceCnyMinor !== next.priceCnyMinor ||
       prev.priceFetchedAt?.getTime() !== next.priceFetchedAt?.getTime();
     if (!changed) continue;
 
@@ -425,12 +436,14 @@ export async function upsertFinanceHoldings(formData: FormData) {
         amountMinor: next.amountMinor,
         quantityMinor: next.quantityMinor,
         priceUsdMinor: next.priceUsdMinor,
+        priceCnyMinor: next.priceCnyMinor,
         priceFetchedAt: next.priceFetchedAt,
       },
       update: {
         amountMinor: next.amountMinor,
         quantityMinor: next.quantityMinor,
         priceUsdMinor: next.priceUsdMinor,
+        priceCnyMinor: next.priceCnyMinor,
         priceFetchedAt: next.priceFetchedAt,
       },
     });
@@ -463,9 +476,9 @@ export async function upsertFinanceHoldings(formData: FormData) {
 
   revalidateApp();
   const query = new URLSearchParams();
-  if (fallbackSymbols.length > 0) {
+  if (fallbackAssets.length > 0) {
     query.set("assetsNotice", "stale-price");
-    query.set("asset", fallbackSymbols.join("、"));
+    query.set("asset", fallbackAssets.join("、"));
   }
   const suffix = query.toString();
   redirect(suffix ? `/finance/profile?${suffix}` : "/finance/profile");
