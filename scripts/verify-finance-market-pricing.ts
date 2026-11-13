@@ -237,6 +237,9 @@ async function main() {
   assert.match(holdingsSource, /isConsumerDefenseHolding/);
   assert.match(formSource, /<details/);
   assert.match(sectionSource, /<details/);
+  assert.match(sectionSource, /aria-label="变更记录"/);
+  assert.match(sectionSource, /summary className/);
+  assert.doesNotMatch(sectionSource, /<details[^>]*open/);
   assert.match(formSource, /科技防守层/);
   assert.match(sectionSource, /科技防守层/);
   assert.match(formSource, /消费防守层/);

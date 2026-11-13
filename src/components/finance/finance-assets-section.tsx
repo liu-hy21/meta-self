@@ -216,26 +216,31 @@ function ChangeLog({ logs }: { logs: FinanceHoldingLog[] }) {
   const prevTotal = (index: number) => groups[index + 1]?.totalCnyMinor ?? null;
 
   return (
-    <section className={`${card} p-6`}>
-      <div className="flex items-end justify-between">
+    <details className={`${card} group/history p-6`} aria-label="变更记录">
+      <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
         <div>
           <p className={eyebrow}>HISTORY</p>
           <h3 className="mt-1 text-base font-semibold text-[var(--ink)]">变更记录</h3>
         </div>
-        <span className="text-xs text-[var(--muted)]">共 {groups.length} 次保存</span>
-      </div>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-[var(--muted)]">共 {groups.length} 次保存</span>
+          <svg viewBox="0 0 20 20" className="size-4 text-[var(--muted)] transition-transform duration-200 group-open/history:rotate-180" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="m5 7.5 5 5 5-5" />
+          </svg>
+        </div>
+      </summary>
       {groups.length === 0 ? (
-        <p className="mt-6 text-sm text-[var(--muted)]">还没有修改记录。</p>
+        <p className="pt-6 text-sm text-[var(--muted)]">还没有修改记录。</p>
       ) : (
-        <>
-          <ol className="mt-6">
+        <div className="pt-6">
+          <ol>
             {shown.map((g, i) => (
               <LogEntry key={g.key} group={g} previousTotal={prevTotal(i)} />
             ))}
           </ol>
           {rest.length > 0 ? (
             <details className="group/more mt-6">
-              <summary className="cursor-pointer list-none text-sm text-[var(--gold-deep)] hover:underline">
+              <summary className="min-h-11 cursor-pointer list-none pt-2 text-sm text-[var(--gold-deep)] hover:underline">
                 <span className="group-open/more:hidden">查看更早的 {rest.length} 次记录</span>
                 <span className="hidden group-open/more:inline">收起</span>
               </summary>
@@ -246,9 +251,9 @@ function ChangeLog({ logs }: { logs: FinanceHoldingLog[] }) {
               </ol>
             </details>
           ) : null}
-        </>
+        </div>
       )}
-    </section>
+    </details>
   );
 }
 
