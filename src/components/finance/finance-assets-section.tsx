@@ -15,6 +15,7 @@ import {
   holdingAccountLabel,
   holdingConfig,
   holdingToCnyMinor,
+  isMarketPricedHolding,
   overseasHoldings,
   schwabHoldingConfigs,
   schwabTotalUsdMinor,
@@ -23,7 +24,13 @@ import {
   type HoldingConfig,
 } from "@/lib/finance-holdings";
 
-type HoldingRow = { account: FinanceHoldingAccount; amountMinor: number };
+type HoldingRow = {
+  account: FinanceHoldingAccount;
+  amountMinor: number;
+  quantityMinor: number | null;
+  priceUsdMinor: number | null;
+  priceFetchedAt: Date | null;
+};
 
 const card = "rounded-2xl border border-[var(--ink)]/10 bg-[var(--panel)] shadow-[0_1px_2px_rgba(28,25,23,0.04)]";
 const eyebrow = "text-[11px] tracking-[0.2em] text-[var(--muted)]";
@@ -42,18 +49,28 @@ function HoldingLine({
   config,
   amountMinor,
   totalCnyMinor,
+  quantityMinor,
+  priceUsdMinor,
+  priceFetchedAt,
   label,
   indent = false,
 }: {
   config: HoldingConfig;
   amountMinor: number;
   totalCnyMinor: number;
+  quantityMinor: number | null;
+  priceUsdMinor: number | null;
+  priceFetchedAt: Date | null;
   label?: string;
   indent?: boolean;
 }) {
   const cny = holdingToCnyMinor(amountMinor, config);
   const share = totalCnyMinor > 0 ? (cny / totalCnyMinor) * 100 : 0;
   const allocation = accountAllocation(config.account);
+  const marketPriced = isMarketPricedHolding(config);
+  const priceDate = priceFetchedAt
+    ? priceFetchedAt.toLocaleDateString("zh-CN", { timeZone: "Asia/Shanghai", month: "2-digit", day: "2-digit" })
+    : null;
   return (
     <li className={`group px-5 py-3.5 transition-colors hover:bg-[var(--ink)]/[0.025] ${indent ? "pl-9" : ""}`}>
       <div className="flex items-center justify-between gap-4">
@@ -63,7 +80,11 @@ function HoldingLine({
             {label ?? config.label}
           </p>
           <p className="mt-0.5 pl-3.5 text-[11px] text-[var(--muted)]">
-            {allocation.label === config.label ? "指数 ETF" : allocation.label}
+            {marketPriced && quantityMinor != null
+              ? `${(quantityMinor / 100).toFixed(2)} 股 · ${priceUsdMinor != null ? `价格 $${(priceUsdMinor / 100).toFixed(2)}${priceDate ? ` · ${priceDate}` : ""}` : "等待价格"}`
+              : allocation.label === config.label
+                ? "指数 ETF"
+                : allocation.label}
           </p>
         </div>
         <div className="text-right">
@@ -213,15 +234,29 @@ export function FinanceAssetsSection({
   trendPoints,
   editing,
   assetsError,
+  assetsNotice,
+  assetsNoticeAsset,
 }: {
   holdings: HoldingRow[];
   logs: FinanceHoldingLog[];
   trendPoints: AssetTrendPoint[];
   editing: boolean;
-  assetsError?: "required" | "invalid";
+  assetsError?: "required" | "invalid" | "price-unavailable";
+  assetsNotice?: "stale-price";
+  assetsNoticeAsset?: string;
 }) {
   const amounts = new Map<FinanceHoldingAccount, number>(financeHoldingConfigs.map((c) => [c.account, 0]));
   for (const h of holdings) amounts.set(h.account, h.amountMinor);
+  const holdingByAccount = new Map(holdings.map((holding) => [holding.account, holding]));
+  const initialQuantities = Object.fromEntries(
+    financeHoldingConfigs.map((config) => [config.account, holdingByAccount.get(config.account)?.quantityMinor ?? null]),
+  );
+  const marketPrices = Object.fromEntries(
+    financeHoldingConfigs.map((config) => [config.account, holdingByAccount.get(config.account)?.priceUsdMinor ?? null]),
+  );
+  const priceFetchedAt = Object.fromEntries(
+    financeHoldingConfigs.map((config) => [config.account, holdingByAccount.get(config.account)?.priceFetchedAt ?? null]),
+  );
 
   if (editing) {
     return (
@@ -231,7 +266,15 @@ export function FinanceAssetsSection({
           <h2 className="mt-1 text-xl font-semibold text-[var(--ink)]">更新资产</h2>
           <p className="mt-1 text-sm text-[var(--muted)]">按当前实际余额填写全部账户，保存后生成今日快照。</p>
         </div>
-        <FinanceHoldingsForm initial={Object.fromEntries(amounts)} error={assetsError} />
+        <FinanceHoldingsForm
+          initial={Object.fromEntries(amounts)}
+          initialQuantities={initialQuantities}
+          marketPrices={marketPrices}
+          priceFetchedAt={priceFetchedAt}
+          error={assetsError}
+          notice={assetsNotice}
+          noticeAsset={assetsNoticeAsset}
+        />
       </div>
     );
   }
@@ -253,6 +296,11 @@ export function FinanceAssetsSection({
 
   return (
     <div className="space-y-6">
+      {assetsNotice === "stale-price" ? (
+        <p className="rounded-xl border border-[#c29a5b]/30 bg-[#c29a5b]/[0.1] px-4 py-3 text-sm text-[#765a2d]" role="status">
+          {assetsNoticeAsset ?? "QQQ / VOO"} 暂时沿用了上次缓存价格。
+        </p>
+      ) : null}
       <section className={`${card} grid overflow-hidden xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,1fr)]`}>
         <div className="flex flex-col justify-between gap-8 bg-[var(--ink)] p-7 text-[var(--panel)] sm:p-8">
           <div className="flex items-start justify-between gap-4">
@@ -328,17 +376,36 @@ export function FinanceAssetsSection({
               config={c}
               amountMinor={amounts.get(c.account) ?? 0}
               totalCnyMinor={totalCnyMinor}
+              quantityMinor={holdingByAccount.get(c.account)?.quantityMinor ?? null}
+              priceUsdMinor={holdingByAccount.get(c.account)?.priceUsdMinor ?? null}
+              priceFetchedAt={holdingByAccount.get(c.account)?.priceFetchedAt ?? null}
               indent
             />
           ))}
           {overseasHoldings.map((c) => (
-            <HoldingLine key={c.account} config={c} amountMinor={amounts.get(c.account) ?? 0} totalCnyMinor={totalCnyMinor} />
+            <HoldingLine
+              key={c.account}
+              config={c}
+              amountMinor={amounts.get(c.account) ?? 0}
+              totalCnyMinor={totalCnyMinor}
+              quantityMinor={holdingByAccount.get(c.account)?.quantityMinor ?? null}
+              priceUsdMinor={holdingByAccount.get(c.account)?.priceUsdMinor ?? null}
+              priceFetchedAt={holdingByAccount.get(c.account)?.priceFetchedAt ?? null}
+            />
           ))}
         </RegionCard>
 
         <RegionCard title="国内" caption="人民币" subtotalMinor={domesticCny}>
           {domesticHoldings.map((c) => (
-            <HoldingLine key={c.account} config={c} amountMinor={amounts.get(c.account) ?? 0} totalCnyMinor={totalCnyMinor} />
+            <HoldingLine
+              key={c.account}
+              config={c}
+              amountMinor={amounts.get(c.account) ?? 0}
+              totalCnyMinor={totalCnyMinor}
+              quantityMinor={holdingByAccount.get(c.account)?.quantityMinor ?? null}
+              priceUsdMinor={holdingByAccount.get(c.account)?.priceUsdMinor ?? null}
+              priceFetchedAt={holdingByAccount.get(c.account)?.priceFetchedAt ?? null}
+            />
           ))}
         </RegionCard>
       </div>

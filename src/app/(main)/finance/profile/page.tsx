@@ -8,10 +8,18 @@ import { getAppUser } from "@/lib/user";
 export default async function FinanceProfilePage({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string; tab?: string; trip?: string; add?: string; assetsError?: string }>;
+    searchParams: Promise<{
+      edit?: string;
+      tab?: string;
+      trip?: string;
+      add?: string;
+      assetsError?: string;
+      assetsNotice?: string;
+      asset?: string;
+    }>;
 }) {
   const user = await getAppUser();
-  const [{ edit, tab, trip, add, assetsError }, holdings, holdingLogs, assetSnapshots] = await Promise.all([
+  const [{ edit, tab, trip, add, assetsError, assetsNotice, asset }, holdings, holdingLogs, assetSnapshots] = await Promise.all([
     searchParams,
     prisma.financeHolding.findMany({ where: { userId: user.id } }),
     prisma.financeHoldingLog.findMany({
@@ -35,7 +43,9 @@ export default async function FinanceProfilePage({
     redirect(suffix ? `/play?${suffix}` : "/play");
   }
 
-  const assetsFormError = assetsError === "required" || assetsError === "invalid" ? assetsError : undefined;
+  const assetsFormError =
+    assetsError === "required" || assetsError === "invalid" || assetsError === "price-unavailable" ? assetsError : undefined;
+  const assetsNoticeValue = assetsNotice === "stale-price" ? assetsNotice : undefined;
 
   return (
     <div className={pageWrap}>
@@ -48,6 +58,8 @@ export default async function FinanceProfilePage({
         }))}
         editing={edit === "1"}
         assetsError={assetsFormError}
+        assetsNotice={assetsNoticeValue}
+        assetsNoticeAsset={asset}
       />
     </div>
   );

@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { drawTools } from "@/lib/library-draw";
 import { englishSections } from "@/lib/library-english";
 import { familySections } from "@/lib/library-family";
 import type { BodyNavItem } from "@/lib/queries/body";
+import { LlmSettings } from "@/components/shell/llm-settings";
 
 const mindProfileHref = "/mind/profile";
 const workProfileHref = "/work/profile";
@@ -103,7 +104,7 @@ export function LeftRail({ items }: { items: BodyNavItem[] }) {
   const dataAssetsOpen = pathname.startsWith(drawHref) || pathname.startsWith(corpHref);
   const drawOpen = pathname.startsWith(drawHref);
   const familyOpen = pathname.startsWith(familyHref);
-  const [open, setOpen] = useState({
+  const routeOpen = {
     profile: profileOpen,
     library: libraryOpen,
     dataAssets: dataAssetsOpen,
@@ -111,19 +112,10 @@ export function LeftRail({ items }: { items: BodyNavItem[] }) {
     english: englishOpen,
     family: familyOpen,
     play: playOpen,
-  });
-
-  useEffect(() => {
-    setOpen({
-      profile: profileOpen,
-      library: libraryOpen,
-      dataAssets: dataAssetsOpen,
-      draw: drawOpen,
-      english: englishOpen,
-      family: familyOpen,
-      play: playOpen,
-    });
-  }, [profileOpen, libraryOpen, dataAssetsOpen, drawOpen, englishOpen, familyOpen, playOpen]);
+  };
+  const [overrides, setOverrides] = useState<Partial<typeof routeOpen>>({});
+  const open = { ...routeOpen, ...overrides };
+  const toggle = (key: keyof typeof routeOpen) => setOverrides((current) => ({ ...current, [key]: !open[key] }));
 
   return (
     <aside className="flex w-[248px] shrink-0 flex-col border-r-4 border-[var(--ink)] bg-[var(--panel)]">
@@ -153,7 +145,7 @@ export function LeftRail({ items }: { items: BodyNavItem[] }) {
           icon={<IconFamily />}
           open={open.family}
           attention={false}
-          onToggle={() => setOpen((current) => ({ ...current, family: !current.family }))}
+          onToggle={() => toggle("family")}
         >
           {familySections.map((section) => {
             const href = `${familyHref}/${section.slug}`;
@@ -168,7 +160,7 @@ export function LeftRail({ items }: { items: BodyNavItem[] }) {
           icon={<IconPlay />}
           open={open.play}
           attention={false}
-          onToggle={() => setOpen((current) => ({ ...current, play: !current.play }))}
+          onToggle={() => toggle("play")}
         >
           <RailLink href={financeProfileHref} label="财商" active={pathname.startsWith(financeProfileHref)} nested />
           <RailLink href={playHref} label="玩商" active={pathname.startsWith(playHref)} nested />
@@ -177,7 +169,7 @@ export function LeftRail({ items }: { items: BodyNavItem[] }) {
             open={open.english}
             attention={false}
             nested
-            onToggle={() => setOpen((current) => ({ ...current, english: !current.english }))}
+            onToggle={() => toggle("english")}
           >
             {englishSections.map((section) => {
               const href = `${englishHref}/${section.slug}`;
@@ -194,7 +186,7 @@ export function LeftRail({ items }: { items: BodyNavItem[] }) {
             icon={<IconMyStore />}
             open={open.profile}
             attention={profile.status === "attention" || logAttention}
-            onToggle={() => setOpen((current) => ({ ...current, profile: !current.profile }))}
+            onToggle={() => toggle("profile")}
           >
             <RailLink
               href={profile.href}
@@ -214,7 +206,7 @@ export function LeftRail({ items }: { items: BodyNavItem[] }) {
           icon={<IconStore />}
           open={open.library}
           attention={false}
-          onToggle={() => setOpen((current) => ({ ...current, library: !current.library }))}
+          onToggle={() => toggle("library")}
         >
           <RailLink href={videoHref} label="视频" active={pathname.startsWith(videoHref)} nested />
           <RailLink href={chatHref} label="聊天记录" active={pathname.startsWith(chatHref)} nested />
@@ -224,14 +216,14 @@ export function LeftRail({ items }: { items: BodyNavItem[] }) {
             open={open.dataAssets}
             attention={false}
             nested
-            onToggle={() => setOpen((current) => ({ ...current, dataAssets: !current.dataAssets }))}
+            onToggle={() => toggle("dataAssets")}
           >
             <Group
               label="绘制"
               open={open.draw}
               attention={false}
               nested
-              onToggle={() => setOpen((current) => ({ ...current, draw: !current.draw }))}
+              onToggle={() => toggle("draw")}
             >
               {drawTools.map((tool) => {
                 const href = `${drawHref}/${tool.slug}`;
@@ -244,6 +236,7 @@ export function LeftRail({ items }: { items: BodyNavItem[] }) {
           </Group>
         </Group>
       </nav>
+      <LlmSettings />
     </aside>
   );
 }

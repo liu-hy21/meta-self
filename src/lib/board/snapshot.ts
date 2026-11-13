@@ -75,6 +75,7 @@ export type BoardPlay = {
 };
 
 export type BoardSnapshot = {
+  userId: string;
   metrics: BoardMetric[];
   foods: BoardFood[];
   mind: BoardMind | null;
@@ -361,7 +362,7 @@ export async function loadBoardSnapshot(userId: string): Promise<BoardSnapshot> 
         }
       : null;
 
-  return { metrics, foods, mind: boardMind, work: boardWork, relation: boardRelation, finance: boardFinance, play: boardPlay, logs: logLines };
+  return { userId, metrics, foods, mind: boardMind, work: boardWork, relation: boardRelation, finance: boardFinance, play: boardPlay, logs: logLines };
 }
 
 export function formatBoardTime(date: Date) {

@@ -1,0 +1,49 @@
+.persona-panel { display: grid; width: 100%; max-width: 1180px; margin: 0 auto; gap: 1rem; min-width: 0; }
+.persona-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: .65rem; padding: .75rem; border: 1px solid var(--relation-line); background: rgba(255, 250, 240, .9); }
+.persona-toolbar--secondary { background: rgba(255, 250, 240, .68); }
+.persona-role-switcher, .persona-summary, .persona-tabs, .persona-links { display: flex; align-items: center; flex-wrap: wrap; gap: .55rem; }
+.persona-panel button, .persona-panel select, .persona-panel input, .persona-panel textarea { border: 1px solid var(--relation-line); border-radius: 3px; background: var(--relation-paper-strong); color: var(--relation-ink); font: inherit; }
+.persona-panel button { min-height: 2.15rem; padding: .45rem .75rem; cursor: pointer; }
+.persona-panel button:hover:not(:disabled), .persona-panel button[aria-pressed="true"] { background: var(--relation-ink); color: var(--relation-paper-strong); }
+.persona-panel button:disabled { cursor: wait; opacity: .45; }
+.persona-panel input, .persona-panel select { min-height: 2.15rem; padding: .35rem .55rem; }
+.persona-panel label { display: inline-flex; align-items: center; gap: .45rem; color: #5e7067; font-size: .75rem; }
+.persona-panel > p { max-width: 78ch; color: #65736a; font-size: .78rem; line-height: 1.65; }
+.persona-panel > p[role="status"] { padding: .65rem .75rem; border-left: 3px solid var(--relation-coral); background: rgba(233, 130, 104, .09); color: var(--relation-ink); }
+.persona-notice { color: #65736a; font-size: .78rem; line-height: 1.65; }
+.persona-error { color: #a22f27; }
+.persona-summary { color: #65736a; font-size: .72rem; }
+.persona-summary span { padding: .3rem .55rem; border: 1px solid rgba(183, 171, 150, .72); background: rgba(255, 250, 240, .5); }
+.persona-summary button { margin-left: auto; }
+.persona-tabs { border-bottom: 1px solid var(--relation-line); padding: .1rem 0 0; }
+.persona-tabs button { border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: transparent; padding: .65rem .8rem; color: #65736a; }
+.persona-tabs button[aria-pressed="true"] { border-bottom-color: var(--relation-coral); background: transparent; color: var(--relation-ink); }
+.persona-card { display: grid; gap: .75rem; min-width: 0; padding: 1rem 1.1rem; border: 1px solid var(--relation-line); background: rgba(255, 250, 240, .86); box-shadow: 4px 4px 0 rgba(24, 51, 46, .08); }
+.persona-card--stats { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+.persona-card h2 { font-size: 1rem; letter-spacing: -.02em; }
+.persona-card h2 span { color: #718078; font-size: .72rem; font-weight: 400; }
+.persona-card > p { color: #53655c; font-size: .82rem; line-height: 1.65; }
+.persona-card article { border-top: 1px solid #ded5c5; padding: .8rem 0; }
+.persona-card article:first-of-type { border-top: 0; padding-top: 0; }
+.persona-card article p { margin: .35rem 0; font-size: .84rem; line-height: 1.65; overflow-wrap: anywhere; }
+.persona-card article small { color: #9c654e; font-size: .68rem; letter-spacing: .05em; }
+.persona-links { gap: .5rem; }
+.persona-links a, .persona-card details a { color: #446c5e; font-size: .72rem; text-decoration: underline; }
+.persona-card textarea { width: 100%; min-height: 7rem; resize: vertical; padding: .7rem; line-height: 1.65; }
+.persona-card details { border-top: 1px solid #ded5c5; padding: .7rem 0; }
+.persona-card details:first-of-type { border-top: 0; padding-top: 0; }
+.persona-card summary { cursor: pointer; color: var(--relation-ink); font-size: .8rem; }
+.persona-card details p { margin: .45rem 0 0; font-size: .78rem; line-height: 1.6; overflow-wrap: anywhere; }
+.persona-message { white-space: pre-wrap; }
+.persona-chat-form { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: end; gap: .55rem; }
+.persona-chat-form textarea { min-height: 4.2rem; }
+.persona-comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem; }
+.persona-comparison article { border: 1px solid var(--relation-line); background: rgba(244, 239, 227, .7); padding: .75rem; }
+.persona-comparison h3 { margin: 0 0 .45rem; font-size: .9rem; }
+@media (max-width: 720px) {
+  .persona-panel { max-width: none; }
+  .persona-card--stats { display: grid; }
+  .persona-chat-form, .persona-comparison { grid-template-columns: 1fr; }
+  .persona-chat-form button { width: 100%; }
+  .persona-summary button { margin-left: 0; }
+}

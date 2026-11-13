@@ -11,11 +11,13 @@ import {
   domesticHoldings,
   financeHoldingConfigs,
   holdingToCnyMinor,
+  isMarketPricedHolding,
   overseasHoldings,
   schwabHoldingConfigs,
   splitCnyMinor,
   type HoldingConfig,
 } from "@/lib/finance-holdings";
+import { sharesToAmountMinor } from "@/lib/finance-prices";
 import type { FinanceHoldingAccount } from "@prisma/client";
 
 const currencySymbol: Record<HoldingConfig["currency"], string> = { USD: "$", HKD: "HK$", CNY: "¥" };
@@ -26,32 +28,55 @@ function parseMinor(raw: string) {
   return Math.round(value * 100);
 }
 
-function AmountField({
+function formatUsdMinor(minor: number) {
+  return `$${(minor / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function formatPriceDate(date: Date | null) {
+  if (!date) return "保存时更新价格";
+  return date.toLocaleDateString("zh-CN", { timeZone: "Asia/Shanghai", month: "2-digit", day: "2-digit" });
+}
+
+function HoldingField({
   config,
   value,
   onChange,
-  title,
+  priceUsdMinor,
+  priceFetchedAt,
 }: {
   config: HoldingConfig;
   value: string;
   onChange: (v: string) => void;
-  title?: string;
+  priceUsdMinor: number | null;
+  priceFetchedAt: Date | null;
 }) {
   const allocation = accountAllocation(config.account);
-  const minor = parseMinor(value);
+  const inputMinor = parseMinor(value);
   const empty = value.trim() === "";
+  const marketPriced = isMarketPricedHolding(config);
+  const amountMinor =
+    inputMinor == null
+      ? null
+      : marketPriced
+        ? priceUsdMinor != null
+          ? sharesToAmountMinor(inputMinor, priceUsdMinor)
+          : null
+        : inputMinor;
+  const cnyMinor = amountMinor == null ? null : holdingToCnyMinor(amountMinor, config);
+
   return (
     <label className="group flex items-center gap-4 px-5 py-3.5 transition-colors focus-within:bg-[var(--ink)]/[0.03]">
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2 text-sm text-[var(--ink)]">
           <span className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: allocation.color }} aria-hidden />
-          {title ?? config.label}
+          {config.label}
         </span>
         <span className="mt-0.5 block text-[11px] text-[var(--muted)]">
-          {config.currencyLabel}
-          {config.currency !== "CNY" && minor != null
-            ? ` · ≈ ¥${splitCnyMinor(holdingToCnyMinor(minor, config)).integer}`
-            : ""}
+          {marketPriced
+            ? priceUsdMinor != null
+              ? `${formatUsdMinor(priceUsdMinor)} · ${formatPriceDate(priceFetchedAt)} · ≈ ¥${splitCnyMinor(cnyMinor ?? 0).integer}`
+              : "价格将在保存时更新"
+            : `${config.currencyLabel}${config.currency !== "CNY" && cnyMinor != null ? ` · ≈ ¥${splitCnyMinor(cnyMinor).integer}` : ""}`}
         </span>
       </span>
       <span
@@ -59,7 +84,7 @@ function AmountField({
           empty ? "border-[#b3644d]/40" : "border-[var(--ink)]/12"
         }`}
       >
-        <span className="text-sm text-[var(--muted)]">{currencySymbol[config.currency]}</span>
+        <span className="text-sm text-[var(--muted)]">{marketPriced ? "股" : currencySymbol[config.currency]}</span>
         <input
           name={config.formKey}
           type="number"
@@ -69,7 +94,9 @@ function AmountField({
           required
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          onInvalid={(e) => e.currentTarget.setCustomValidity("请填写该账户金额，没有余额可填 0")}
+          onInvalid={(e) =>
+            e.currentTarget.setCustomValidity(marketPriced ? "请填写股数，没有持仓可填 0" : "请填写该账户金额，没有余额可填 0")
+          }
           onInput={(e) => e.currentTarget.setCustomValidity("")}
           className="h-10 w-full min-w-0 bg-transparent pl-2 text-right text-sm tabular-nums text-[var(--ink)] outline-none [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           placeholder="0.00"
@@ -91,16 +118,35 @@ function Group({ title, caption, children }: { title: string; caption: string; c
   );
 }
 
+type FinanceFormError = "required" | "invalid" | "price-unavailable";
+
 export function FinanceHoldingsForm({
   initial,
+  initialQuantities,
+  marketPrices,
+  priceFetchedAt,
   error,
+  notice,
+  noticeAsset,
 }: {
   initial: Record<string, number>;
-  error?: "required" | "invalid";
+  initialQuantities: Record<string, number | null>;
+  marketPrices: Record<string, number | null>;
+  priceFetchedAt: Record<string, Date | null>;
+  error?: FinanceFormError;
+  notice?: "stale-price";
+  noticeAsset?: string;
 }) {
   const [values, setValues] = useState<Record<string, string>>(() =>
     Object.fromEntries(
-      financeHoldingConfigs.map((c) => [c.formKey, ((initial[c.account] ?? 0) / 100).toFixed(c.decimals)]),
+      financeHoldingConfigs.map((c) => {
+        if (isMarketPricedHolding(c)) {
+          const quantityMinor = initialQuantities[c.account];
+          const hasLegacyAmount = quantityMinor == null && (initial[c.account] ?? 0) > 0;
+          return [c.formKey, hasLegacyAmount ? "" : ((quantityMinor ?? 0) / 100).toFixed(c.decimals)];
+        }
+        return [c.formKey, ((initial[c.account] ?? 0) / 100).toFixed(c.decimals)];
+      }),
     ),
   );
 
@@ -109,9 +155,15 @@ export function FinanceHoldingsForm({
   const amounts = new Map<FinanceHoldingAccount, number>();
   let filled = 0;
   for (const c of financeHoldingConfigs) {
-    const minor = parseMinor(values[c.formKey] ?? "");
-    if (minor != null) filled += 1;
-    amounts.set(c.account, minor ?? 0);
+    const inputMinor = parseMinor(values[c.formKey] ?? "");
+    if (inputMinor != null) filled += 1;
+    const amountMinor =
+      inputMinor == null
+        ? 0
+        : isMarketPricedHolding(c) && marketPrices[c.account] != null
+          ? sharesToAmountMinor(inputMinor, marketPrices[c.account]!)
+          : inputMinor;
+    amounts.set(c.account, amountMinor);
   }
   const slices = computeAllocationCnyMinor(amounts);
   const total = slices.reduce((s, x) => s + x.cnyMinor, 0);
@@ -129,7 +181,14 @@ export function FinanceHoldingsForm({
           <p className="rounded-xl border border-[#b3644d]/30 bg-[#b3644d]/[0.08] px-4 py-3 text-sm text-[#8a4433]" role="alert">
             {error === "required"
               ? "有账户没有填写。所有账户都要填，没有余额可以填 0。"
-              : "部分金额格式无效，请填写非负数字。"}
+              : error === "invalid"
+                ? "部分金额或股数格式无效，请填写非负数字。"
+                : `${noticeAsset ?? "QQQ / VOO"} 暂时取不到价格，尚未保存，请稍后重试。`}
+          </p>
+        ) : null}
+        {notice === "stale-price" ? (
+          <p className="rounded-xl border border-[#c29a5b]/30 bg-[#c29a5b]/[0.1] px-4 py-3 text-sm text-[#765a2d]" role="status">
+            {noticeAsset ?? "QQQ / VOO"} 暂时沿用了上次缓存价格。
           </p>
         ) : null}
 
@@ -138,16 +197,37 @@ export function FinanceHoldingsForm({
             SCHWAB
           </div>
           {schwabHoldingConfigs.map((c) => (
-            <AmountField key={c.account} config={c} value={values[c.formKey]} onChange={set(c.formKey)} />
+            <HoldingField
+              key={c.account}
+              config={c}
+              value={values[c.formKey]}
+              onChange={set(c.formKey)}
+              priceUsdMinor={marketPrices[c.account] ?? null}
+              priceFetchedAt={priceFetchedAt[c.account] ?? null}
+            />
           ))}
           {overseasHoldings.map((c) => (
-            <AmountField key={c.account} config={c} value={values[c.formKey]} onChange={set(c.formKey)} />
+            <HoldingField
+              key={c.account}
+              config={c}
+              value={values[c.formKey]}
+              onChange={set(c.formKey)}
+              priceUsdMinor={marketPrices[c.account] ?? null}
+              priceFetchedAt={priceFetchedAt[c.account] ?? null}
+            />
           ))}
         </Group>
 
         <Group title="国内" caption="人民币">
           {domesticHoldings.map((c) => (
-            <AmountField key={c.account} config={c} value={values[c.formKey]} onChange={set(c.formKey)} />
+            <HoldingField
+              key={c.account}
+              config={c}
+              value={values[c.formKey]}
+              onChange={set(c.formKey)}
+              priceUsdMinor={marketPrices[c.account] ?? null}
+              priceFetchedAt={priceFetchedAt[c.account] ?? null}
+            />
           ))}
         </Group>
       </div>

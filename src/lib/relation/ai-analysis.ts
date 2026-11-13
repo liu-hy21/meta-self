@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { requestLlmChat } from "@/lib/llm-config";
 import { loadAllChatMessages } from "@/lib/relation/chat-archive";
 import { buildRelationAiPrompt, type RelationAiSample } from "@/lib/relation/ai-prompt";
 import type { RelationMetrics } from "@/lib/relation/types";
@@ -19,32 +20,12 @@ function sampleMessages(messages: Awaited<ReturnType<typeof loadAllChatMessages>
   return selected.slice(0, 120);
 }
 
-async function requestModel(system: string, user: string) {
-  const apiKey = process.env.LLM_API_KEY;
-  if (!apiKey) throw new Error("尚未配置 LLM_API_KEY，暂时无法生成 AI 分析。");
-  const baseUrl = (process.env.LLM_BASE_URL ?? "https://api.openai.com/v1").replace(/\/$/, "");
-  const model = process.env.LLM_MODEL ?? "gpt-4o-mini";
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 60_000);
-  try {
-    const response = await fetch(`${baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model, messages: [{ role: "system", content: system }, { role: "user", content: user }], temperature: 0.35 }),
-      signal: controller.signal,
-    });
-    if (!response.ok) throw new Error(`模型请求失败（HTTP ${response.status}）。`);
-    const data = (await response.json()) as { choices?: { message?: { content?: string } }[] };
-    const content = data.choices?.[0]?.message?.content?.trim();
-    if (!content) throw new Error("模型没有返回可用内容。");
-    return { model, content };
-  } finally {
-    clearTimeout(timeout);
-  }
+export async function requestModel(userId: string, system: string, user: string) {
+  return requestLlmChat(userId, system, user);
 }
 
 export async function getLatestRelationAiReport(userId: string, personId: string) {
-  return prisma.relationAiReport.findFirst({ where: { userId, personId }, orderBy: { createdAt: "desc" } });
+  return prisma.relationAiReport.findFirst({ where: { userId, personId, status: "COMPLETED" }, orderBy: { createdAt: "desc" } });
 }
 
 export async function generateRelationAiReport(userId: string, personId: string) {
@@ -60,7 +41,7 @@ export async function generateRelationAiReport(userId: string, personId: string)
   const periodStart = messages[0].day;
   const periodEnd = messages.at(-1)?.day ?? periodStart;
   const prompt = buildRelationAiPrompt({ personName: person.name, periodStart, periodEnd, metrics, samples: sampleMessages(messages) });
-  const { model, content } = await requestModel(prompt.system, prompt.user);
+  const { model, content } = await requestModel(userId, prompt.system, prompt.user);
   const evidenceIds = prompt.user.match(/msg-\d{6}/g) ?? [];
   return prisma.relationAiReport.create({
     data: {

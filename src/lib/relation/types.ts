@@ -24,6 +24,7 @@ export type ChatArchiveQuery = DateRange & {
 
 export type ChatMessage = {
   id: string;
+  sourceId?: string;
   index: number;
   time: string;
   timestamp: number;

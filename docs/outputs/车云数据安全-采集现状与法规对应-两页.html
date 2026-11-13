@@ -1,0 +1,1493 @@
+<!doctype html>
+<html lang="zh-CN" data-slide="1">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#17457e">
+  <title>车云数据安全｜采集现状与法规对应</title>
+  <style>
+    /*
+     * html-ppt deck/table structure, kept self-contained so the file can be
+     * opened directly from the file system without a build step.
+     */
+    :root {
+      --blue-900: #123b6d;
+      --blue-800: #17457e;
+      --blue-700: #24588f;
+      --blue-100: #edf3fa;
+      --blue-050: #f6f9fc;
+      --ink-900: #1f2937;
+      --ink-700: #334155;
+      --ink-500: #64748b;
+      --line: #d7e1ec;
+      --orange-700: #b85d00;
+      --orange-100: #fff3e5;
+      --payload-fill: #f5f8fb;
+      --system-fill: #fff0df;
+      --system-ink: #9a4d12;
+      --storage-fill: #fff7cf;
+      --storage-ink: #7d5b00;
+      --identity-fill: #eaf2ff;
+      --identity-border: #a9c5ec;
+      --identity-ink: #17528d;
+      --vehicle-fill: #e8f5f1;
+      --vehicle-border: #9bcdbd;
+      --vehicle-ink: #216b59;
+      --cockpit-fill: #f1edff;
+      --cockpit-border: #c2b6e8;
+      --cockpit-ink: #5b4894;
+      --voice-fill: #e9f5ff;
+      --voice-border: #a5cde9;
+      --voice-ink: #246583;
+      --factory-fill: #fff4d6;
+      --factory-border: #e1c477;
+      --factory-ink: #7c5b05;
+      --paper: #ffffff;
+      --shadow: 0 18px 56px rgba(24, 62, 104, .16);
+      --radius: 3px;
+      --slide-ratio: 16 / 9;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #e9eef5;
+      color: var(--ink-900);
+      font-family: "Microsoft YaHei", "Noto Sans SC", "PingFang SC", Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .viewport {
+      min-height: 100%;
+      display: grid;
+      place-items: center;
+      padding: 28px;
+    }
+
+    .stage {
+      position: relative;
+      width: 1280px;
+      height: 720px;
+      transform-origin: center center;
+      filter: drop-shadow(var(--shadow));
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      overflow: hidden;
+      background: var(--paper);
+      border-radius: var(--radius);
+      padding: 30px 40px 24px;
+      user-select: none;
+    }
+
+    .slide.is-active {
+      display: block;
+      animation: page-in 260ms ease both;
+    }
+
+    .notes { display: none; }
+
+    @keyframes page-in {
+      from { opacity: .7; transform: translateX(8px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .topline {
+      height: 44px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      border-bottom: 2px solid var(--blue-800);
+      position: relative;
+    }
+
+    .topline::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 6px;
+      height: 32px;
+      background: var(--blue-800);
+    }
+
+    .brand {
+      margin: 5px 0 0 18px;
+      color: var(--ink-900);
+      font-weight: 800;
+      font-size: 17px;
+      letter-spacing: .02em;
+    }
+
+    .meta {
+      margin-top: 5px;
+      color: var(--ink-900);
+      font-size: 15px;
+      letter-spacing: .02em;
+    }
+
+    h1, h2, p { margin: 0; }
+
+    .title {
+      margin-top: 16px;
+      color: var(--blue-800);
+      font-size: clamp(23px, 2.65vw, 34px);
+      line-height: 1.2;
+      font-weight: 850;
+      letter-spacing: -.035em;
+    }
+
+    .subtitle {
+      margin-top: 12px;
+      color: var(--ink-900);
+      font-size: clamp(15px, 1.65vw, 21px);
+      line-height: 1.35;
+      letter-spacing: -.015em;
+    }
+
+    .source {
+      position: absolute;
+      left: 40px;
+      bottom: 24px;
+      color: var(--ink-500);
+      font-size: 12px;
+      line-height: 1.25;
+      white-space: nowrap;
+    }
+
+    .page-number {
+      position: absolute;
+      right: 23px;
+      bottom: 21px;
+      color: var(--ink-900);
+      font-size: 15px;
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+    }
+
+    /* Page 1: collection flow table */
+    .flow-table {
+      margin-top: 18px;
+      position: relative;
+      display: grid;
+      grid-template-columns: 1.05fr 2.72fr 2.58fr 3.16fr;
+      grid-template-rows: 38px repeat(5, 71px);
+      gap: 7px 0;
+    }
+
+    .flow-header {
+      display: flex;
+      align-items: center;
+      min-width: 0;
+      padding: 0 10px;
+      background: var(--blue-800);
+      color: white;
+      font-size: clamp(13px, 1.4vw, 18px);
+      font-weight: 800;
+      line-height: 1.05;
+    }
+
+    .flow-row { display: contents; }
+
+    .flow-cell {
+      position: relative;
+      min-width: 0;
+      display: flex;
+      align-items: center;
+      padding: 8px 12px;
+      background: var(--blue-050);
+      color: var(--ink-900);
+      font-size: clamp(12px, 1.29vw, 17px);
+      line-height: 1.32;
+      white-space: pre-line;
+    }
+
+    .flow-row:nth-child(even) .flow-cell { background: var(--blue-100); }
+
+    .flow-cell:first-child {
+      color: var(--ink-900);
+      font-weight: 800;
+      font-size: clamp(13px, 1.38vw, 18px);
+      line-height: 1.12;
+    }
+
+    .touchpoint {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .touchpoint svg {
+      flex: 0 0 auto;
+      width: 30px;
+      height: 30px;
+      color: var(--blue-800);
+      stroke: currentColor;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    .touchpoint-label { display: inline-block; }
+
+    .flow-row .flow-cell:nth-child(2) { background: var(--payload-fill); }
+    .flow-row .flow-cell:nth-child(3) {
+      background: var(--system-fill);
+      color: var(--system-ink);
+    }
+    .flow-row .flow-cell:nth-child(4) {
+      background: var(--storage-fill);
+      color: var(--storage-ink);
+    }
+
+    .flow-row.identity .flow-cell:first-child { border-left: 4px solid var(--identity-border); background: var(--identity-fill); }
+    .flow-row.vehicle .flow-cell:first-child,
+    .flow-row.cockpit .flow-cell:first-child,
+    .flow-row.voice .flow-cell:first-child { border-left: 4px solid var(--vehicle-border); background: var(--vehicle-fill); }
+    .flow-row.factory .flow-cell:first-child { border-left: 4px solid var(--factory-border); background: var(--factory-fill); }
+
+    .data-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      width: 100%;
+    }
+
+    .data-group {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 24px;
+      padding: 2px 4px 2px 0;
+      border-left: 3px solid var(--group-border);
+      background: var(--group-fill);
+    }
+
+    .data-group.identity { --group-fill: var(--identity-fill); --group-border: var(--identity-border); --group-ink: var(--identity-ink); }
+    .data-group.vehicle,
+    .data-group.cockpit,
+    .data-group.voice { --group-fill: var(--vehicle-fill); --group-border: var(--vehicle-border); --group-ink: var(--vehicle-ink); }
+    .data-group.factory { --group-fill: var(--factory-fill); --group-border: var(--factory-border); --group-ink: var(--factory-ink); }
+
+    .data-label {
+      flex: 0 0 42px;
+      padding-left: 6px;
+      color: var(--ink-900);
+      font-size: 11px;
+      line-height: 1.1;
+      font-weight: 800;
+    }
+
+    .field-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .field-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 18px;
+      padding: 1px 5px;
+      border: 1px solid var(--group-border);
+      border-radius: 3px;
+      background: rgba(255,255,255,.68);
+      color: var(--ink-700);
+      font-size: 10px;
+      line-height: 1.1;
+      white-space: nowrap;
+    }
+
+    .flow-cell:not(:first-child)::before {
+      content: "→";
+      position: absolute;
+      left: -18px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--blue-800);
+      font-size: 21px;
+      font-weight: 500;
+    }
+
+    .flow-row .flow-cell:nth-child(3),
+    .flow-row .flow-cell:nth-child(4) { display: none; }
+
+    .flow-row.identity .flow-cell:nth-child(1) { grid-column: 1; grid-row: 2; }
+    .flow-row.identity .flow-cell:nth-child(2) { grid-column: 2; grid-row: 2; }
+    .flow-row.vehicle .flow-cell:nth-child(1) { grid-column: 1; grid-row: 3; }
+    .flow-row.vehicle .flow-cell:nth-child(2) { grid-column: 2; grid-row: 3; }
+    .flow-row.cockpit .flow-cell:nth-child(1) { grid-column: 1; grid-row: 4; }
+    .flow-row.cockpit .flow-cell:nth-child(2) { grid-column: 2; grid-row: 4; }
+    .flow-row.voice .flow-cell:nth-child(1) { grid-column: 1; grid-row: 5; }
+    .flow-row.voice .flow-cell:nth-child(2) { grid-column: 2; grid-row: 5; }
+    .flow-row.factory .flow-cell:nth-child(1) { grid-column: 1; grid-row: 6; }
+    .flow-row.factory .flow-cell:nth-child(2) { grid-column: 2; grid-row: 6; }
+
+    .flow-merge {
+      position: relative;
+      z-index: 2;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 7px;
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      color: var(--ink-900);
+    }
+
+    .flow-merge.system {
+      background: var(--system-fill);
+      border-left: 4px solid #d98b4b;
+    }
+
+    .flow-merge.storage {
+      background: var(--storage-fill);
+      border-left: 4px solid #d8b64d;
+      color: var(--ink-900);
+    }
+
+    .flow-merge.system::before,
+    .flow-merge.storage::before {
+      content: "→";
+      position: absolute;
+      left: -19px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--blue-800);
+      font-size: 21px;
+      font-weight: 500;
+    }
+
+    .flow-merge.system::after {
+      content: "→";
+      position: absolute;
+      right: -19px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--blue-800);
+      font-size: 21px;
+      font-weight: 500;
+    }
+
+    .system-app { grid-column: 3; grid-row: 2; }
+    .system-vehicle { grid-column: 3; grid-row: 3 / span 3; }
+    .system-factory { grid-column: 3; grid-row: 6; }
+    .system-core {
+      grid-column: 3;
+      grid-row: 2 / span 5;
+    }
+
+    .system-core::before,
+    .storage-merge::before { display: none; }
+
+    .system-rail {
+      display: grid;
+      grid-template-columns: .9fr 1.1fr;
+      gap: 12px;
+      align-items: stretch;
+      min-height: 100%;
+    }
+
+    .system-rail .merge-node {
+      min-height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 6px;
+      font-size: 17px;
+      line-height: 1.25;
+    }
+
+    .system-rail .merge-node + .merge-node { position: relative; }
+    .system-rail .merge-node + .merge-node::before {
+      content: "→";
+      position: absolute;
+      left: -17px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--ink-900);
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .storage-merge { grid-column: 4; grid-row: 2 / span 5; }
+
+    .data-system-link {
+      position: absolute;
+      z-index: 4;
+      height: 2px;
+      background: var(--ink-900);
+      pointer-events: none;
+    }
+
+    .data-system-link::after {
+      content: "";
+      position: absolute;
+      right: -1px;
+      top: 50%;
+      width: 7px;
+      height: 7px;
+      border-top: 2px solid var(--ink-900);
+      border-right: 2px solid var(--ink-900);
+      transform: translateY(-50%) rotate(45deg);
+    }
+
+    .data-system-link.to-tsp { left: 39.65%; width: 5.9%; }
+    .data-system-link.link-app-account { top: 67px; }
+    .data-system-link.link-can { top: 158px; }
+    .data-system-link.link-cockpit { top: 236px; }
+    .data-system-link.link-factory { top: 392px; }
+
+    .data-system-route {
+      --target: 93px;
+      --route-top: 48px;
+      position: absolute;
+      inset: 0;
+      z-index: 4;
+      pointer-events: none;
+    }
+
+    .data-system-route span {
+      position: absolute;
+      display: block;
+      background: var(--ink-900);
+    }
+
+    .data-system-route .elbow-entry {
+      left: 39.65%;
+      top: calc(var(--target) - 1px);
+      width: .55%;
+      height: 2px;
+    }
+
+    .data-system-route .elbow-rise,
+    .data-system-route .elbow-drop {
+      width: 2px;
+      top: var(--route-top);
+      height: calc(var(--target) - var(--route-top));
+    }
+
+    .data-system-route .elbow-rise { left: 40.2%; }
+    .data-system-route .elbow-drop { left: 52.2%; }
+
+    .data-system-route .elbow-across {
+      left: 40.2%;
+      top: calc(var(--route-top) - 1px);
+      width: 12%;
+      height: 2px;
+    }
+
+    .data-system-route .elbow-final {
+      left: 52.2%;
+      top: calc(var(--target) - 1px);
+      width: 7.5%;
+      height: 2px;
+    }
+
+    .data-system-route .elbow-final::after {
+      content: "";
+      position: absolute;
+      right: -1px;
+      top: 50%;
+      width: 7px;
+      height: 7px;
+      border-top: 2px solid var(--ink-900);
+      border-right: 2px solid var(--ink-900);
+      transform: translateY(-50%) rotate(45deg);
+    }
+
+    .data-system-route.link-voice { --target: 314px; }
+
+    .merge-node {
+      padding: 6px 8px;
+      background: rgba(255,255,255,.62);
+      border: 1px solid currentColor;
+      color: inherit;
+      font-size: 13px;
+      line-height: 1.1;
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .merge-node.large {
+      padding: 11px 8px;
+      font-size: 18px;
+    }
+
+    .vehicle-stack {
+      display: flex;
+      align-items: stretch;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .vehicle-stack .merge-node {
+      position: relative;
+      flex: 1 1 0;
+      min-width: 0;
+      min-height: 82px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 4px;
+      font-size: 11px;
+      line-height: 1.25;
+    }
+
+    .vehicle-stack .merge-node + .merge-node::before {
+      content: "→";
+      position: absolute;
+      left: -11px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--blue-800);
+      font-size: 15px;
+      font-weight: 800;
+    }
+
+    .merge-chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .merge-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 20px;
+      padding: 2px 6px;
+      border: 1px solid currentColor;
+      border-radius: 3px;
+      background: rgba(255,255,255,.64);
+      color: inherit;
+      font-size: 10px;
+      line-height: 1.1;
+      white-space: nowrap;
+    }
+
+    .merge-note {
+      color: var(--ink-900);
+      font-size: 10px;
+      line-height: 1.25;
+    }
+
+    .boundary {
+      position: absolute;
+      left: 40px;
+      right: 40px;
+      bottom: 64px;
+      min-height: 38px;
+      display: flex;
+      align-items: center;
+      padding: 7px 12px;
+      background: var(--orange-100);
+      color: var(--orange-700);
+      font-size: clamp(13px, 1.35vw, 18px);
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    /* Page 2: regulation matrix */
+    .matrix {
+      margin: 17px 0 0 0;
+      display: grid;
+      grid-template-columns: 115px repeat(5, minmax(0, 1fr));
+      grid-template-rows: 44px 80px 80px 80px 78px;
+      gap: 8px 11px;
+    }
+
+    .matrix-corner { background: transparent; }
+
+    .stage-head {
+      position: relative;
+      display: flex;
+      align-items: center;
+      padding: 0 10px;
+      background: var(--blue-800);
+      color: white;
+      font-size: clamp(13px, 1.45vw, 19px);
+      font-weight: 800;
+      line-height: 1.05;
+    }
+
+    .stage-head:not(:nth-child(6))::after {
+      content: "→";
+      position: absolute;
+      right: -17px;
+      top: 50%;
+      transform: translateY(-51%);
+      color: var(--blue-800);
+      font-size: 18px;
+      font-weight: 500;
+      z-index: 2;
+    }
+
+    .matrix-label {
+      display: flex;
+      align-items: center;
+      color: var(--blue-800);
+      font-size: clamp(13px, 1.4vw, 18px);
+      font-weight: 800;
+      line-height: 1.12;
+    }
+
+    .matrix-label.gap { color: var(--orange-700); }
+
+    .matrix-cell {
+      display: flex;
+      align-items: center;
+      padding: 8px 10px;
+      background: var(--blue-100);
+      color: var(--ink-900);
+      font-size: clamp(11px, 1.18vw, 15px);
+      line-height: 1.24;
+      white-space: pre-line;
+    }
+
+    .matrix-cell.existing { background: #f7f9fc; }
+    .matrix-cell.gap {
+      background: var(--orange-100);
+      color: var(--orange-700);
+      font-weight: 800;
+    }
+    .matrix-cell.reference {
+      background: #f7f9fc;
+      color: var(--ink-700);
+    }
+
+    /* Page 2: lifecycle process — a different visual grammar from page 1 */
+    .process-legend {
+      margin-top: 12px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 16px;
+      color: var(--ink-500);
+      font-size: 12px;
+    }
+
+    .process-legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .legend-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue-800); }
+    .legend-dot.existing { background: #b8c6d5; }
+    .legend-dot.gap { background: var(--orange-700); }
+
+    .lifecycle {
+      position: relative;
+      margin-top: 9px;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .lifecycle::before {
+      content: "";
+      position: absolute;
+      z-index: 0;
+      top: 31px;
+      left: 42px;
+      right: 42px;
+      height: 2px;
+      background: var(--blue-800);
+    }
+
+    .process-step {
+      position: relative;
+      z-index: 1;
+      min-width: 0;
+    }
+
+    .process-head {
+      min-height: 64px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      background: var(--blue-800);
+      color: #fff;
+    }
+
+    .process-number {
+      flex: 0 0 auto;
+      display: grid;
+      place-items: center;
+      width: 31px;
+      height: 31px;
+      border: 1px solid rgba(255,255,255,.72);
+      border-radius: 50%;
+      font-size: 13px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .process-icon {
+      flex: 0 0 auto;
+      width: 24px;
+      height: 24px;
+      color: #fff;
+      stroke: currentColor;
+      stroke-width: 1.7;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+    }
+
+    .process-title {
+      min-width: 0;
+      font-size: clamp(13px, 1.4vw, 18px);
+      line-height: 1.1;
+      font-weight: 800;
+    }
+
+    .process-body {
+      min-height: 286px;
+      padding: 8px 10px 10px;
+      background: var(--blue-050);
+      border: 1px solid var(--line);
+      border-top: 0;
+    }
+
+    .process-row {
+      display: grid;
+      grid-template-columns: 32px 1fr;
+      gap: 6px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .process-row:last-of-type { border-bottom: 0; }
+
+    .process-label {
+      padding-top: 2px;
+      color: var(--blue-800);
+      font-size: 11px;
+      line-height: 1.1;
+      font-weight: 800;
+    }
+
+    .process-copy {
+      color: var(--ink-900);
+      font-size: clamp(11px, 1.13vw, 14px);
+      line-height: 1.38;
+      white-space: pre-line;
+    }
+
+    .process-row.existing .process-label,
+    .process-row.existing .process-copy { color: var(--ink-500); }
+
+    .process-row.gap .process-label,
+    .process-row.gap .process-copy {
+      color: var(--orange-700);
+      font-weight: 800;
+    }
+
+    .process-law {
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px solid var(--line);
+      color: var(--ink-500);
+      font-size: clamp(10px, 1.02vw, 12px);
+      line-height: 1.35;
+    }
+
+    .process-law strong {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--blue-800);
+      font-size: 11px;
+    }
+
+    /* Roadmap variant for page 2 */
+    .roadmap-legend {
+      margin-top: 10px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 15px;
+      color: var(--ink-900);
+      font-size: 12px;
+    }
+
+    .roadmap-legend span { display: inline-flex; align-items: center; gap: 6px; }
+    .roadmap-legend i { width: 8px; height: 8px; border-radius: 50%; background: var(--blue-800); }
+    .roadmap-legend i.existing { background: #b8c6d5; }
+    .roadmap-legend i.audit { background: var(--blue-700); }
+    .roadmap-legend i.gap { background: var(--orange-700); }
+
+    .roadmap {
+      position: relative;
+      height: 390px;
+      margin-top: 8px;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .roadmap::before {
+      content: "";
+      position: absolute;
+      z-index: 0;
+      left: 34px;
+      right: 34px;
+      top: 50%;
+      height: 3px;
+      background: var(--blue-800);
+    }
+
+    .roadmap::after {
+      content: "→";
+      position: absolute;
+      z-index: 0;
+      right: 14px;
+      top: calc(50% - 18px);
+      color: var(--blue-800);
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .route-stop {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-rows: 1fr 54px 1fr;
+      min-width: 0;
+    }
+
+    .route-stop:nth-child(1),
+    .route-stop:nth-child(2) {
+      --phase: #5b827b;
+      --phase-soft: #e8f1ef;
+      --phase-fill: #f7faf9;
+    }
+
+    .route-stop:nth-child(3) {
+      --phase: #5d7894;
+      --phase-soft: #e8eef4;
+      --phase-fill: #f7f9fb;
+    }
+
+    .route-stop:nth-child(4) {
+      --phase: #776b89;
+      --phase-soft: #eeeaf2;
+      --phase-fill: #faf9fc;
+    }
+
+    .route-stop:nth-child(5) {
+      --phase: #8d6b78;
+      --phase-soft: #f1e9ed;
+      --phase-fill: #fcf9fa;
+    }
+
+    .route-card {
+      align-self: end;
+      min-width: 0;
+      width: calc(100% + 28px);
+      min-height: 0;
+      padding: 7px 9px 6px;
+      background: var(--phase-fill);
+      border: 1px solid var(--line);
+      border-top: 4px solid var(--phase);
+      box-shadow: 0 7px 14px rgba(24,62,104,.08);
+    }
+
+    .route-card.bottom {
+      grid-row: 3;
+      align-self: start;
+      border-top: 1px solid var(--line);
+      border-bottom: 4px solid var(--phase);
+    }
+
+    .route-node {
+      grid-row: 2;
+      display: grid;
+      place-items: center;
+    }
+
+    .route-node span {
+      display: grid;
+      place-items: center;
+      width: 42px;
+      height: 42px;
+      border: 4px solid var(--paper);
+      border-radius: 50%;
+      background: var(--phase);
+      box-shadow: 0 0 0 2px var(--phase);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .route-eyebrow {
+      color: var(--ink-900);
+      font-size: 10px;
+      line-height: 1.1;
+      letter-spacing: .08em;
+    }
+
+    .route-title {
+      margin-top: 3px;
+      color: var(--ink-900);
+      font-size: clamp(15px, 1.4vw, 18px);
+      line-height: 1.15;
+      font-weight: 800;
+    }
+
+    .route-key {
+      margin-top: 5px;
+      padding: 3px 5px;
+      background: var(--phase-soft);
+      color: var(--ink-900);
+      font-size: clamp(10px, .95vw, 12px);
+      line-height: 1.2;
+      font-weight: 800;
+    }
+
+    .route-status {
+      display: grid;
+      grid-template-columns: 24px 1fr;
+      gap: 4px;
+      margin-top: 4px;
+      color: var(--ink-900);
+      font-size: clamp(9px, .85vw, 10px);
+      line-height: 1.2;
+    }
+
+    .route-status.audit { align-items: start; }
+    .audit-chip-list {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 3px;
+      min-width: 0;
+    }
+
+    .audit-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 42px;
+      min-height: 17px;
+      padding: 1px 7px;
+      border: 1px solid #9dbbd7;
+      border-radius: 3px;
+      background: rgba(255,255,255,.76);
+      color: var(--ink-900);
+      font-size: 9px;
+      line-height: 1.1;
+      white-space: nowrap;
+    }
+
+    .route-status strong { color: var(--ink-900); font-size: 9px; }
+    .route-status.gap {
+      color: var(--ink-900);
+      padding: 3px 5px;
+      margin-left: -5px;
+      background: var(--orange-100);
+      border-left: 3px solid var(--orange-700);
+    }
+    .route-status.gap strong { color: var(--ink-900); }
+    .route-status.audit { color: var(--ink-900); }
+    .route-status.audit strong { color: var(--ink-900); }
+
+    .route-law {
+      margin-top: 4px;
+      padding-top: 4px;
+      border-top: 1px solid var(--line);
+      color: var(--ink-900);
+      font-size: 9px;
+      line-height: 1.2;
+    }
+
+    .route-law strong { color: var(--ink-900); }
+
+    .boundary.blue {
+      bottom: 49px;
+      min-height: 30px;
+      padding: 5px 10px;
+      background: var(--blue-100);
+      color: var(--blue-800);
+      font-size: clamp(12px, 1.25vw, 16px);
+      font-weight: 500;
+    }
+
+    /* Presenter chrome */
+    .hud {
+      position: fixed;
+      right: 20px;
+      bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--ink-500);
+      font-size: 12px;
+    }
+
+    .export-mode .hud,
+    .export-mode .notes-drawer,
+    .export-mode .overview { display: none !important; }
+
+    .hud button {
+      width: 30px;
+      height: 26px;
+      border: 1px solid #c9d5e3;
+      border-radius: 4px;
+      background: rgba(255,255,255,.9);
+      color: var(--blue-800);
+      cursor: pointer;
+      font: inherit;
+    }
+
+    .hud button:hover,
+    .hud button:focus-visible { background: var(--blue-100); outline: none; }
+
+    .dots { display: flex; gap: 5px; margin: 0 2px; }
+    .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: #c6d1de;
+      cursor: pointer;
+    }
+    .dot.is-active { background: var(--blue-800); }
+
+    .notes-drawer {
+      position: fixed;
+      left: 20px;
+      bottom: 16px;
+      width: min(440px, calc(100vw - 40px));
+      padding: 12px 14px;
+      border: 1px solid #cbd8e6;
+      border-radius: 8px;
+      background: rgba(255,255,255,.97);
+      box-shadow: 0 12px 36px rgba(24,62,104,.18);
+      color: var(--ink-700);
+      font-size: 13px;
+      line-height: 1.5;
+      display: none;
+    }
+    .notes-drawer.is-open { display: block; }
+
+    .overview {
+      position: fixed;
+      inset: 0;
+      display: none;
+      place-items: center;
+      background: rgba(20, 42, 69, .9);
+      z-index: 5;
+      padding: 32px;
+    }
+    .overview.is-open { display: grid; }
+    .overview-grid {
+      width: min(1100px, 100%);
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 24px;
+    }
+    .overview-item { cursor: pointer; }
+    .overview-item .thumb {
+      position: relative;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      border: 3px solid transparent;
+      border-radius: 4px;
+      background: white;
+      transform-origin: center;
+    }
+    .overview-item.is-active .thumb { border-color: #8fc4fb; }
+    .overview-item .thumb > .slide {
+      display: block;
+      transform: scale(.25);
+      transform-origin: top left;
+      width: 400%;
+      height: 400%;
+      border-radius: 0;
+    }
+    .overview-item .label {
+      margin-top: 8px;
+      color: #e6effa;
+      font-size: 13px;
+    }
+
+    @media (max-width: 900px) {
+      .viewport { padding: 10px; }
+      .stage { width: 1280px; height: 720px; max-height: none; }
+      .slide { padding: 19px 24px 17px; }
+      .source { left: 24px; bottom: 17px; font-size: 10px; }
+      .page-number { right: 15px; bottom: 14px; }
+      .boundary { left: 24px; right: 24px; bottom: 49px; }
+      .matrix { grid-template-columns: 88px repeat(5, minmax(0, 1fr)); gap: 5px 6px; }
+      .stage-head, .matrix-label, .matrix-cell { font-size: 10px; }
+      .flow-table { grid-template-rows: 32px repeat(5, 62px); }
+      .flow-cell { padding: 5px 7px; font-size: 10px; }
+      .flow-cell:first-child { font-size: 11px; }
+      .touchpoint { gap: 5px; }
+      .touchpoint svg { width: 22px; height: 22px; }
+      .lifecycle { gap: 5px; }
+      .lifecycle::before { left: 25px; right: 25px; }
+      .process-head { padding: 7px 6px; gap: 4px; min-height: 55px; }
+      .process-number { width: 24px; height: 24px; font-size: 10px; }
+      .process-icon { width: 18px; height: 18px; }
+      .process-body { padding: 5px 6px 7px; }
+      .process-row { grid-template-columns: 25px 1fr; gap: 4px; padding: 7px 0; }
+      .process-label { font-size: 9px; }
+      .process-copy { font-size: 9px; }
+      .process-law { font-size: 8px; }
+      .roadmap { gap: 5px; }
+      .roadmap::before { left: 25px; right: 25px; }
+      .route-card { padding: 7px 6px; min-height: 140px; }
+      .route-node span { width: 34px; height: 34px; font-size: 10px; }
+      .route-title { font-size: 13px; }
+      .route-key { font-size: 9px; }
+      .route-status { grid-template-columns: 23px 1fr; font-size: 8px; }
+      .route-law { font-size: 8px; }
+      .flow-cell:not(:first-child)::before { left: -12px; font-size: 14px; }
+      .flow-header { padding: 0 7px; font-size: 10px; }
+    }
+
+    @media print {
+      @page { size: landscape; margin: 0; }
+      body { overflow: visible; background: white; }
+      .viewport { padding: 0; display: block; }
+      .stage { width: 1280px; height: 720px; transform: none !important; filter: none; }
+      .slide, .slide.is-active { position: relative; display: block; width: 100vw; height: 56.25vw; page-break-after: always; border-radius: 0; }
+      .hud, .notes-drawer, .overview { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <main class="viewport" aria-label="车云数据安全横板演示稿">
+    <div class="stage" id="stage">
+      <section class="slide is-active" data-index="1" data-title="采集现状" aria-label="第 1 页：采集现状">
+        <div class="topline">
+          <div class="brand">车云数据安全</div>
+          <div class="meta">2026.11&nbsp;&nbsp;/&nbsp;&nbsp;材料现状梳理</div>
+        </div>
+        <h1 class="title">采集现状：三端接入，车端按数据类型分流</h1>
+        <p class="subtitle">APP、车端、店端构成采集入口；语音另有识别与训练路径</p>
+
+        <div class="flow-table" role="table" aria-label="数据采集现状与处理链路">
+          <div class="flow-header" role="columnheader">采集触点</div>
+          <div class="flow-header" role="columnheader">数据类型</div>
+          <div class="flow-header" role="columnheader">数据传输系统</div>
+          <div class="flow-header" role="columnheader">数据存储地</div>
+
+          <div class="flow-merge system system-core" role="cell">
+            <div class="system-rail">
+              <div class="merge-node">车云<br>TSP</div>
+              <div class="merge-node">车云数据<br>湖仓</div>
+            </div>
+          </div>
+
+          <div class="flow-merge storage storage-merge" role="cell">
+            <div class="merge-node large">各站点数据中心</div>
+            <div class="merge-chip-list">
+              <span class="merge-chip">账户 / 授权</span><span class="merge-chip">湖仓分析</span><span class="merge-chip">匿名化 / 脱敏</span><span class="merge-chip">语音训练</span><span class="merge-chip">电池监控</span><span class="merge-chip">远程诊断</span><span class="merge-chip">文件 / 日志</span><span class="merge-chip">VIN / TUID 查询</span>
+            </div>
+            <div class="merge-note">统一存储后按数据类型分流到业务使用方</div>
+          </div>
+
+          <div class="data-system-link to-tsp link-app-account" aria-hidden="true"></div>
+          <div class="data-system-route link-app-event" aria-hidden="true">
+            <span class="elbow-entry"></span><span class="elbow-rise"></span><span class="elbow-across"></span><span class="elbow-drop"></span><span class="elbow-final"></span>
+          </div>
+          <div class="data-system-link to-tsp link-can" aria-hidden="true"></div>
+          <div class="data-system-link to-tsp link-cockpit" aria-hidden="true"></div>
+          <div class="data-system-route link-voice" aria-hidden="true">
+            <span class="elbow-entry"></span><span class="elbow-rise"></span><span class="elbow-across"></span><span class="elbow-drop"></span><span class="elbow-final"></span>
+          </div>
+          <div class="data-system-link to-tsp link-factory" aria-hidden="true"></div>
+
+          <div class="flow-row identity" role="row">
+            <div class="flow-cell" role="cell">
+              <span class="touchpoint">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="2.5" width="10" height="19" rx="2"></rect><path d="M10 5h4"></path><path d="M11 18.5h2"></path></svg>
+                <span class="touchpoint-label">APP</span>
+              </span>
+            </div>
+            <div class="flow-cell" role="cell">
+              <div class="data-stack">
+                <div class="data-group identity"><span class="data-label">账号</span><span class="field-list"><span class="field-chip">姓名</span><span class="field-chip">手机</span><span class="field-chip">邮箱</span></span></div>
+                <div class="data-group identity"><span class="data-label">埋点</span><span class="field-list"><span class="field-chip">用户ID</span><span class="field-chip">事件</span><span class="field-chip">设备</span><span class="field-chip">地区</span></span></div>
+              </div>
+            </div>
+          </div>
+          <div class="flow-row vehicle" role="row">
+            <div class="flow-cell" role="cell">
+              <span class="touchpoint">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 15.5h16l-1.5-5a2 2 0 0 0-1.9-1.4H7.4A2 2 0 0 0 5.5 10.5L4 15.5Z"></path><path d="M4 15.5v3h2"></path><path d="M20 15.5v3h-2"></path><circle cx="7.5" cy="15.5" r="1.2"></circle><circle cx="16.5" cy="15.5" r="1.2"></circle><path d="M9 9.1 10.2 6h3.6L15 9.1"></path></svg>
+                <span class="touchpoint-label">车端<br>CAN</span>
+              </span>
+            </div>
+            <div class="flow-cell" role="cell">
+              <div class="data-stack">
+                <div class="data-group vehicle"><span class="data-label">信号</span><span class="field-list"><span class="field-chip">电压</span><span class="field-chip">电流</span><span class="field-chip">里程</span></span></div>
+              </div>
+            </div>
+          </div>
+          <div class="flow-row cockpit" role="row">
+            <div class="flow-cell" role="cell">
+              <span class="touchpoint">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="5.5"></circle><circle cx="12" cy="13" r="1.5"></circle><path d="M12 7.5v4M7.2 15.2 10.7 13M16.8 15.2 13.3 13"></path><path d="M4.5 6.5h4M15.5 6.5h4"></path></svg>
+                <span class="touchpoint-label">车端<br>座舱</span>
+              </span>
+            </div>
+            <div class="flow-cell" role="cell">
+              <div class="data-stack">
+                <div class="data-group cockpit"><span class="data-label">事件</span><span class="field-list"><span class="field-chip">打开 HUD</span><span class="field-chip">播放音乐</span></span></div>
+              </div>
+            </div>
+          </div>
+          <div class="flow-row voice" role="row">
+            <div class="flow-cell" role="cell">
+              <span class="touchpoint">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M6 11.5a6 6 0 0 0 12 0M12 17.5v3.5M9 21h6"></path></svg>
+                <span class="touchpoint-label">车端<br>语音</span>
+              </span>
+            </div>
+            <div class="flow-cell" role="cell">
+              <div class="data-stack">
+                <div class="data-group voice"><span class="data-label">输入</span><span class="field-list"><span class="field-chip">音频</span><span class="field-chip">VIN</span></span></div>
+                <div class="data-group voice"><span class="data-label">输出</span><span class="field-list"><span class="field-chip">转写文本</span><span class="field-chip">用户身份标识</span></span></div>
+              </div>
+            </div>
+          </div>
+          <div class="flow-row factory" role="row">
+            <div class="flow-cell" role="cell">
+              <span class="touchpoint">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 21h18M5 21V10l5-3v3l4-3v3h5v11"></path><path d="M8 13h2M8 16h2M14 13h2M14 16h2"></path><path d="M10 21v-3h4v3"></path></svg>
+                <span class="touchpoint-label">店端 /<br>MES</span>
+              </span>
+            </div>
+            <div class="flow-cell" role="cell">
+              <div class="data-stack">
+                <div class="data-group factory"><span class="data-label">对象</span><span class="field-list"><span class="field-chip">人</span><span class="field-chip">车</span><span class="field-chip">设备</span><span class="field-chip">卡</span><span class="field-chip">实销</span></span></div>
+                <div class="data-group factory"><span class="data-label">标识</span><span class="field-list"><span class="field-chip">VIN</span><span class="field-chip">TUID</span><span class="field-chip">iccId</span><span class="field-chip">zip 日志</span></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="page-number">01</div>
+        <aside class="notes">本页沿用参考材料第三页的跨行合并逻辑：采集触点和数据类型逐行保留差异，车云 TSP、车云数据湖仓与各站点数据中心作为共享节点只呈现一次，避免重复链路制造噪声。</aside>
+      </section>
+
+      <section class="slide" data-index="2" data-title="合规路线图" aria-label="第 2 页：采集安全合规排查路线图">
+        <div class="topline">
+          <div class="brand">车云数据安全</div>
+          <div class="meta">2026.11&nbsp;&nbsp;/&nbsp;&nbsp;材料现状梳理</div>
+        </div>
+        <h1 class="title">采集安全控制路线图</h1>
+        <p class="subtitle">沿数据生命周期向右推进；每个节点同时标出控制要求、材料现状、排查重点和待补事项</p>
+
+        <div class="roadmap-legend" aria-label="状态图例">
+          <span><i></i>生命周期推进</span>
+          <span><i class="existing"></i>已有描述</span>
+          <span><i class="audit"></i>排查重点</span>
+          <span><i class="gap"></i>缺口 / 待确认</span>
+        </div>
+
+        <div class="roadmap" role="list" aria-label="采集安全控制路线图">
+          <article class="route-stop" role="listitem">
+            <div class="route-card">
+              <div class="route-eyebrow">采集环节</div>
+              <div class="route-title">清单评审</div>
+              <div class="route-key">控制：类型 / 用途 / 频率 / 精度</div>
+              <div class="route-status"><strong>已有</strong><span>三端类型已列；车端按规范评审</span></div>
+              <div class="route-status audit">
+                <strong>核查</strong>
+                <div class="audit-chip-list" aria-label="采集清单排查对象">
+                  <span class="audit-chip">T-BOX</span><span class="audit-chip">域控</span><span class="audit-chip">摄像头</span><span class="audit-chip">DMS</span><span class="audit-chip">麦克风</span><span class="audit-chip">车外匿名化</span><span class="audit-chip">位置精度</span><span class="audit-chip">敏感区域</span><span class="audit-chip">PIA</span>
+                </div>
+              </div>
+              <div class="route-status gap"><strong>待补</strong><span>全车型字段 / 频率 / 精度清单不完整</span></div>
+              <div class="route-law"><strong>依据：</strong>个人信息保护法 · 汽车数据规定<br>GB/T 41871</div>
+            </div>
+            <div class="route-node"><span>01</span></div>
+          </article>
+
+          <article class="route-stop" role="listitem">
+            <div class="route-card bottom">
+              <div class="route-eyebrow">采集环节</div>
+              <div class="route-title">告知授权</div>
+              <div class="route-key">控制：告知 / 单独同意 / 可撤回</div>
+              <div class="route-status"><strong>已有</strong><span>APP 弹窗 / 授权日志；语音授权提醒</span></div>
+              <div class="route-status audit">
+                <strong>核查</strong>
+                <div class="audit-chip-list" aria-label="告知授权排查控制点">
+                  <span class="audit-chip">默认不收集</span><span class="audit-chip">车内处理</span><span class="audit-chip">单独同意</span><span class="audit-chip">关闭采集</span><span class="audit-chip">转让 / 报废删除</span>
+                </div>
+              </div>
+              <div class="route-status gap"><strong>待补</strong><span>AI 训练目的告知不足；计划补政策</span></div>
+              <div class="route-law"><strong>依据：</strong>个人信息保护法 · 汽车数据规定</div>
+            </div>
+            <div class="route-node"><span>02</span></div>
+          </article>
+
+          <article class="route-stop" role="listitem">
+            <div class="route-card">
+              <div class="route-eyebrow">传输环节</div>
+              <div class="route-title">采集传输</div>
+              <div class="route-key">控制：加密 / 鉴权 / 接口 / 出境</div>
+              <div class="route-status"><strong>已有</strong><span>车端 TLS / AES；TSP 设备鉴权</span></div>
+              <div class="route-status audit">
+                <strong>核查</strong>
+                <div class="audit-chip-list" aria-label="传输控制排查点">
+                  <span class="audit-chip">TLS1.2+</span><span class="audit-chip">国密</span><span class="audit-chip">VIN 双向鉴权</span><span class="audit-chip">Kafka</span><span class="audit-chip">API 脱敏</span><span class="audit-chip">出境路径</span><span class="audit-chip">最小权限</span><span class="audit-chip">日志 ≥ 6 个月</span>
+                </div>
+              </div>
+              <div class="route-status gap"><strong>待补</strong><span>Kafka 未加密；MES 部分链路待建设</span></div>
+              <div class="route-law"><strong>依据：</strong>网络安全法 · GB 44495<br>GB/T 41871</div>
+            </div>
+            <div class="route-node"><span>03</span></div>
+          </article>
+
+          <article class="route-stop" role="listitem">
+            <div class="route-card bottom">
+              <div class="route-eyebrow">存储环节</div>
+              <div class="route-title">存储处理</div>
+              <div class="route-key">控制：境内 / 分级 / 加密 / 期限</div>
+              <div class="route-status"><strong>已有</strong><span>账户字段 AES；语音云端加密</span></div>
+              <div class="route-status audit">
+                <strong>核查</strong>
+                <div class="audit-chip-list" aria-label="存储治理排查点">
+                  <span class="audit-chip">境内主备</span><span class="audit-chip">分类分级</span><span class="audit-chip">重要数据目录</span><span class="audit-chip">RBAC</span><span class="audit-chip">密钥分离</span><span class="audit-chip">到期删除</span><span class="audit-chip">恢复演练</span>
+                </div>
+              </div>
+              <div class="route-status gap"><strong>待补</strong><span>训练前未匿名化；原始音频未及时删</span></div>
+              <div class="route-law"><strong>依据：</strong>数据安全法 · 个人信息保护法<br>汽车数据规定</div>
+            </div>
+            <div class="route-node"><span>04</span></div>
+          </article>
+
+          <article class="route-stop" role="listitem">
+            <div class="route-card">
+              <div class="route-eyebrow">使用环节</div>
+              <div class="route-title">使用与退出</div>
+              <div class="route-key">控制：用途一致 / 对外共享 / 权利 / 事件</div>
+              <div class="route-status"><strong>已有</strong><span>APP 可取消 / 删除；账户逻辑删除</span></div>
+              <div class="route-status audit">
+                <strong>核查</strong>
+                <div class="audit-chip-list" aria-label="数据使用排查点">
+                  <span class="audit-chip">用途一致</span><span class="audit-chip">AI / 训练</span><span class="audit-chip">UBI / 营销</span><span class="audit-chip">第三方接口</span><span class="audit-chip">处理协议</span><span class="audit-chip">权利响应</span><span class="audit-chip">年度报告</span><span class="audit-chip">事件应急</span><span class="audit-chip">执法留痕</span>
+                </div>
+              </div>
+              <div class="route-status gap"><strong>待补</strong><span>第三方协议未签；物理删除后续建设</span></div>
+              <div class="route-law"><strong>依据：</strong>个人信息保护法 · 欧洲方案引用 GDPR</div>
+            </div>
+            <div class="route-node"><span>05</span></div>
+          </article>
+        </div>
+
+        <div class="page-number">02</div>
+        <aside class="notes">本页将材料现状与《车联网数据中台隐私数据合规排查大纲》的口径叠在同一条路线图上。蓝线表达生命周期顺序，灰色是材料已有描述，蓝色 token 是大纲要求的排查对象和证据点，橙色是材料明确的缺口或待确认；排查要求不等于已完成能力。</aside>
+      </section>
+    </div>
+  </main>
+
+  <nav class="hud" aria-label="演示控制">
+    <button type="button" data-prev aria-label="上一页">←</button>
+    <div class="dots" aria-label="页码">
+      <button class="dot is-active" type="button" data-go="1" aria-label="第 1 页"></button>
+      <button class="dot" type="button" data-go="2" aria-label="第 2 页"></button>
+    </div>
+    <span id="counter">1 / 2</span>
+    <button type="button" data-next aria-label="下一页">→</button>
+    <button type="button" data-overview aria-label="打开概览">O</button>
+  </nav>
+  <div class="notes-drawer" id="notes" role="status" aria-live="polite"></div>
+  <div class="overview" id="overview" role="dialog" aria-label="页面概览" aria-modal="true">
+    <div class="overview-grid" id="overview-grid"></div>
+  </div>
+
+  <script>
+    (() => {
+      if (new URLSearchParams(location.search).has('pptx')) document.documentElement.classList.add('export-mode');
+      const slides = [...document.querySelectorAll('.slide')];
+      const dots = [...document.querySelectorAll('.dot')];
+      const counter = document.getElementById('counter');
+      const notes = document.getElementById('notes');
+      const overview = document.getElementById('overview');
+      const overviewGrid = document.getElementById('overview-grid');
+      const stage = document.getElementById('stage');
+      let current = 0;
+
+      function fitStage() {
+        const padding = 28;
+        const scale = Math.min((window.innerWidth - padding * 2) / 1280, (window.innerHeight - padding * 2) / 720);
+        stage.style.transform = `scale(${Math.max(0.2, scale)})`;
+      }
+
+      function getFromHash() {
+        const match = location.hash.match(/#\/(\d+)/);
+        return match ? Math.min(Math.max(parseInt(match[1], 10) - 1, 0), slides.length - 1) : 0;
+      }
+
+      function renderOverview() {
+        overviewGrid.innerHTML = slides.map((slide, index) => `
+          <div class="overview-item ${index === current ? 'is-active' : ''}" data-overview-go="${index}" tabindex="0">
+            <div class="thumb">${slide.outerHTML}</div>
+            <div class="label">${String(index + 1).padStart(2, '0')} · ${slide.dataset.title}</div>
+          </div>
+        `).join('');
+        overviewGrid.querySelectorAll('[data-overview-go]').forEach(item => {
+          item.addEventListener('click', () => { go(Number(item.dataset.overviewGo)); overview.classList.remove('is-open'); });
+          item.addEventListener('keydown', event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); item.click(); } });
+        });
+      }
+
+      function go(index, updateHash = true) {
+        current = (index + slides.length) % slides.length;
+        slides.forEach((slide, i) => {
+          slide.classList.toggle('is-active', i === current);
+          slide.setAttribute('aria-hidden', i === current ? 'false' : 'true');
+        });
+        dots.forEach((dot, i) => dot.classList.toggle('is-active', i === current));
+        counter.textContent = `${current + 1} / ${slides.length}`;
+        if (updateHash) history.replaceState(null, '', `#/${current + 1}`);
+        document.documentElement.dataset.slide = String(current + 1);
+        renderOverview();
+        notes.classList.remove('is-open');
+      }
+
+      function showNotes() {
+        const text = slides[current].querySelector('.notes')?.textContent?.trim() || '';
+        notes.textContent = text;
+        notes.classList.toggle('is-open');
+      }
+
+      document.querySelector('[data-prev]').addEventListener('click', () => go(current - 1));
+      document.querySelector('[data-next]').addEventListener('click', () => go(current + 1));
+      dots.forEach(dot => dot.addEventListener('click', () => go(Number(dot.dataset.go) - 1)));
+      document.querySelector('[data-overview]').addEventListener('click', () => { renderOverview(); overview.classList.add('is-open'); });
+      overview.addEventListener('click', event => { if (event.target === overview) overview.classList.remove('is-open'); });
+
+      window.addEventListener('hashchange', () => go(getFromHash(), false));
+      document.addEventListener('keydown', event => {
+        if (event.key === 'Escape') { overview.classList.remove('is-open'); notes.classList.remove('is-open'); return; }
+        if (overview.classList.contains('is-open')) return;
+        if (['ArrowRight', 'PageDown', ' '].includes(event.key)) { event.preventDefault(); go(current + 1); }
+        if (['ArrowLeft', 'PageUp'].includes(event.key)) { event.preventDefault(); go(current - 1); }
+        if (event.key === 'Home') { event.preventDefault(); go(0); }
+        if (event.key === 'End') { event.preventDefault(); go(slides.length - 1); }
+        if (event.key.toLowerCase() === 'o') { renderOverview(); overview.classList.add('is-open'); }
+        if (event.key.toLowerCase() === 'n' || event.key.toLowerCase() === 's') showNotes();
+        if (event.key.toLowerCase() === 'f') document.documentElement.requestFullscreen?.();
+      });
+
+      window.addEventListener('resize', fitStage);
+      fitStage();
+      go(getFromHash(), false);
+    })();
+  </script>
+</body>
+</html>

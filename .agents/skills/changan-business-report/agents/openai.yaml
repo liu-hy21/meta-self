@@ -1,0 +1,4 @@
+interface:
+  display_name: "长安技术业务汇报"
+  short_description: "沉淀车云融合与VHR对标材料的空间逻辑、精炼文案和业务决策呈现"
+  default_prompt: "使用 $changan-business-report，根据现有材料设计技术业务汇报，明确业务判断、架构边界与证据口径。"

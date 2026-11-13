@@ -8,6 +8,7 @@ const items = [
   { key: "chat", label: "原文查看" },
   { key: "analysis", label: "数据分析" },
   { key: "ai", label: "AI 分析" },
+  { key: "persona", label: "角色模拟" },
 ] as const;
 
 export function RelationWorkbenchNav({ personId, personName }: { personId: string; personName: string }) {
@@ -23,8 +24,8 @@ export function RelationWorkbenchNav({ personId, personName }: { personId: strin
               ? `/relation/chat/${personId}`
               : item.key === "analysis"
                 ? `/relation/analysis/${personId}`
-                : `/relation/analysis/${personId}/ai`;
-          const active = item.key === "person" ? pathname === base : pathname.startsWith(href);
+                : item.key === "ai" ? `/relation/analysis/${personId}/ai` : `/relation/persona/${personId}`;
+          const active = pathname === href;
           return (
             <Link key={item.key} href={href} className={active ? "is-active" : undefined}>
               <span className="relation-tab-index">0{items.indexOf(item) + 1}</span>

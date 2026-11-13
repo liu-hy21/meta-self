@@ -51,12 +51,12 @@ function MetricNameLink({ personId, metricId, name }: { personId: string; metric
   return <Link className="relation-metric-name-link" href={`/relation/analysis/${personId}?view=ledger&metric=${encodeURIComponent(metricId)}#metric-ledger-${metricId}`} title="查看指标台账中的计算口径">{name}</Link>;
 }
 
-function RequiredMetricGroup({ personId, title, rows }: { personId: string; title: string; rows: { label: string; self: string; other: string; ledgerId: string }[] }) {
-  return <section className="relation-required-metrics"><div className="relation-required-metrics-head"><div><h2>{title}</h2></div><div className="relation-required-metrics-columns"><span>我</span><span>bc</span></div></div><div className="relation-required-metrics-body">{rows.map((row) => <div key={row.label} className="relation-required-metric-row"><div><strong><MetricNameLink personId={personId} metricId={row.ledgerId} name={row.label} /></strong></div><b>{row.self}</b><b>{row.other}</b></div>)}</div></section>;
+function RequiredMetricGroup({ personId, rows }: { personId: string; rows: { label: string; self: string; other: string; ledgerId: string }[] }) {
+  return <section className="relation-required-metrics"><div className="relation-required-metrics-head relation-required-metrics-head--columns-only"><div className="relation-required-metrics-columns"><span>我</span><span>bc</span></div></div><div className="relation-required-metrics-body">{rows.map((row) => <div key={row.label} className="relation-required-metric-row"><div><strong><MetricNameLink personId={personId} metricId={row.ledgerId} name={row.label} /></strong></div><b>{row.self}</b><b>{row.other}</b></div>)}</div></section>;
 }
 
-function SingleMetricGroup({ personId, title, rows }: { personId: string; title: string; rows: { label: string; value: string; ledgerId: string }[] }) {
-  return <section className="relation-required-metrics relation-required-metrics--single-column"><div className="relation-required-metrics-head"><div><h2>{title}</h2></div></div><div className="relation-required-metrics-body">{rows.map((row) => <div key={row.label} className="relation-required-metric-row relation-required-metric-row--single"><div><strong><MetricNameLink personId={personId} metricId={row.ledgerId} name={row.label} /></strong></div><b>{row.value}</b></div>)}</div></section>;
+function SingleMetricGroup({ personId, rows }: { personId: string; rows: { label: string; value: string; ledgerId: string }[] }) {
+  return <section className="relation-required-metrics relation-required-metrics--single-column"><div className="relation-required-metrics-head relation-required-metrics-head--columns-only" aria-hidden="true" /><div className="relation-required-metrics-body">{rows.map((row) => <div key={row.label} className="relation-required-metric-row relation-required-metric-row--single"><div><strong><MetricNameLink personId={personId} metricId={row.ledgerId} name={row.label} /></strong></div><b>{row.value}</b></div>)}</div></section>;
 }
 
 function ComparisonMetricsBox({ personId, rows }: { personId: string; rows: { label: string; self: string; other: string; ledgerId: string }[] }) {
@@ -130,8 +130,8 @@ function QuantityView({ metrics, personId, ledger }: { metrics: RelationMetrics;
     <div className="relation-analysis-view">
       <AnalysisSection title="文字展示">
         <div className="relation-analysis-grid relation-quantity-text-grid">
-          <RequiredMetricGroup personId={personId} title="数量类指标" rows={pairedRows} />
-          <SingleMetricGroup personId={personId} title="数量概览" rows={overviewRows} />
+          <RequiredMetricGroup personId={personId} rows={pairedRows} />
+          <SingleMetricGroup personId={personId} rows={overviewRows} />
         </div>
       </AnalysisSection>
 

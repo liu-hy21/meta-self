@@ -32,11 +32,14 @@ import { parseDishDifficulty } from "@/lib/kitchen-dish";
 import {
   computeTotalCnyMinor,
   financeHoldingConfigs,
+  holdingAccountLabel,
   holdingsMapToJson,
+  isMarketPricedHolding,
   shanghaiCalendarDate,
   validateFinanceHoldingsForm,
 } from "@/lib/finance-holdings";
 import type { FinanceHoldingAccount } from "@prisma/client";
+import { fetchNineQuantFinancePrice, resolveFinancePrice, sharesToAmountMinor } from "@/lib/finance-prices";
 import { prisma } from "@/lib/db";
 import { generateReportForUser } from "@/lib/reports/generate";
 import { generateRelationAiReport } from "@/lib/relation/ai-analysis";
@@ -358,22 +361,78 @@ export async function upsertFinanceHoldings(formData: FormData) {
     redirect(`/finance/profile?edit=1&assetsError=${code}`);
   }
 
-  const newAmounts = validated.amounts;
   const existing = await prisma.financeHolding.findMany({ where: { userId } });
   const byAccount = new Map(existing.map((row) => [row.account, row]));
+  const newAmounts = new Map(validated.amounts);
+  const prepared = new Map<
+    FinanceHoldingAccount,
+    { amountMinor: number; quantityMinor: number | null; priceUsdMinor: number | null; priceFetchedAt: Date | null }
+  >();
+  const fallbackSymbols: string[] = [];
+
+  for (const config of financeHoldingConfigs) {
+    const prev = byAccount.get(config.account);
+    if (!isMarketPricedHolding(config)) {
+      prepared.set(config.account, {
+        amountMinor: newAmounts.get(config.account)!,
+        quantityMinor: null,
+        priceUsdMinor: null,
+        priceFetchedAt: null,
+      });
+      continue;
+    }
+
+    const quantityMinor = validated.quantities.get(config.account)!;
+    const price = await resolveFinancePrice(
+      prev?.priceUsdMinor ?? null,
+      prev?.priceFetchedAt ?? null,
+      () => fetchNineQuantFinancePrice(config.priceSymbol!),
+    );
+    if (price.unavailable || price.priceUsdMinor == null) {
+      redirect(`/finance/profile?edit=1&assetsError=price-unavailable&asset=${encodeURIComponent(holdingAccountLabel(config.account))}`);
+    }
+    if (price.usedFallback) fallbackSymbols.push(config.priceSymbol!);
+
+    const amountMinor = sharesToAmountMinor(quantityMinor, price.priceUsdMinor);
+    newAmounts.set(config.account, amountMinor);
+    prepared.set(config.account, {
+      amountMinor,
+      quantityMinor,
+      priceUsdMinor: price.priceUsdMinor,
+      priceFetchedAt: price.fetchedAt,
+    });
+  }
 
   const totalCnyMinor = computeTotalCnyMinor(newAmounts);
 
   for (const config of financeHoldingConfigs) {
-    const newMinor = newAmounts.get(config.account)!;
+    const next = prepared.get(config.account)!;
     const prev = byAccount.get(config.account);
     const previousMinor = prev?.amountMinor ?? null;
-    if (prev && previousMinor === newMinor) continue;
+    const changed =
+      !prev ||
+      previousMinor !== next.amountMinor ||
+      prev.quantityMinor !== next.quantityMinor ||
+      prev.priceUsdMinor !== next.priceUsdMinor ||
+      prev.priceFetchedAt?.getTime() !== next.priceFetchedAt?.getTime();
+    if (!changed) continue;
 
     await prisma.financeHolding.upsert({
       where: { userId_account: { userId, account: config.account } },
-      create: { userId, account: config.account, amountMinor: newMinor },
-      update: { amountMinor: newMinor },
+      create: {
+        userId,
+        account: config.account,
+        amountMinor: next.amountMinor,
+        quantityMinor: next.quantityMinor,
+        priceUsdMinor: next.priceUsdMinor,
+        priceFetchedAt: next.priceFetchedAt,
+      },
+      update: {
+        amountMinor: next.amountMinor,
+        quantityMinor: next.quantityMinor,
+        priceUsdMinor: next.priceUsdMinor,
+        priceFetchedAt: next.priceFetchedAt,
+      },
     });
 
     await prisma.financeHoldingLog.create({
@@ -381,7 +440,7 @@ export async function upsertFinanceHoldings(formData: FormData) {
         userId,
         account: config.account,
         previousAmountMinor: prev ? previousMinor : null,
-        newAmountMinor: newMinor,
+        newAmountMinor: next.amountMinor,
         totalCnyMinor,
       },
     });
@@ -403,7 +462,13 @@ export async function upsertFinanceHoldings(formData: FormData) {
   });
 
   revalidateApp();
-  redirect("/finance/profile");
+  const query = new URLSearchParams();
+  if (fallbackSymbols.length > 0) {
+    query.set("assetsNotice", "stale-price");
+    query.set("asset", fallbackSymbols.join("、"));
+  }
+  const suffix = query.toString();
+  redirect(suffix ? `/finance/profile?${suffix}` : "/finance/profile");
 }
 
 export async function createPlayDistrict(formData: FormData) {

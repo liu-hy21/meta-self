@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>车联网数据中台隐私数据合规排查大纲</title>
+<style>
+  :root {
+    --ink: #1a2233; --ink-2: #475069; --ink-3: #8a93a8;
+    --primary: #1d4fd7; --primary-deep: #16337e; --accent: #0e9db8;
+    --amber: #d97706; --red: #c93b3b; --green: #1a9e6c;
+    --line: #dfe5f0; --panel: #f4f7fc; --panel-2: #eef2fa;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "PingFang SC", "Microsoft YaHei", "Segoe UI", sans-serif; color: var(--ink); background: #e8ebf2; line-height: 1.7; }
+  .page { max-width: 980px; margin: 24px auto; background: #fff; border-radius: 10px; box-shadow: 0 6px 30px rgba(20,35,80,.12); overflow: hidden; }
+  .hero { background: linear-gradient(135deg, #10214d 0%, #16337e 48%, #1d4fd7 100%); color: #fff; padding: 44px 56px 36px; }
+  .hero .tag { font-size: 13px; letter-spacing: .3em; color: #9fc0ff; margin-bottom: 14px; }
+  .hero h1 { font-size: 34px; font-weight: 800; line-height: 1.35; margin-bottom: 10px; }
+  .hero .sub { font-size: 15px; color: #c7d6f5; }
+  .hero .meta { font-size: 13px; color: #8fa9d8; margin-top: 18px; }
+  .content { padding: 36px 56px 48px; }
+  h2 { font-size: 22px; color: var(--primary-deep); margin: 34px 0 12px; padding-left: 12px; border-left: 4px solid var(--primary); }
+  h2:first-of-type { margin-top: 0; }
+  h3 { font-size: 17px; color: var(--primary-deep); margin: 20px 0 8px; }
+  p { font-size: 14px; color: var(--ink-2); margin-bottom: 8px; }
+  .lead { font-size: 14.5px; color: var(--ink-2); background: var(--panel-2); border-left: 4px solid var(--accent); border-radius: 0 8px 8px 0; padding: 12px 16px; margin-bottom: 6px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 10px 0 16px; }
+  th { background: var(--primary-deep); color: #fff; padding: 8px 10px; text-align: left; font-weight: 600; white-space: nowrap; }
+  td { border: 1px solid var(--line); padding: 7px 10px; color: var(--ink-2); vertical-align: top; background: #fff; }
+  tr:nth-child(even) td { background: var(--panel-2); }
+  td b { color: var(--ink); }
+
+  /* 排查清单 */
+  .stage { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px 24px; margin: 18px 0; }
+  .stage-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 4px; }
+  .stage-head .no { font-size: 30px; font-weight: 800; color: var(--primary); opacity: .5; }
+  .stage-head .t { font-size: 19px; font-weight: 800; color: var(--primary-deep); }
+  .stage-head .law { margin-left: auto; font-size: 12px; color: var(--accent); }
+  .item { display: flex; gap: 10px; padding: 11px 8px; border-bottom: 1px dashed var(--line); align-items: flex-start; }
+  .item:last-child { border-bottom: none; }
+  .item input[type=checkbox] { margin-top: 5px; width: 16px; height: 16px; accent-color: var(--primary); flex: none; cursor: pointer; }
+  .item .body { flex: 1; }
+  .item .q { font-size: 14px; font-weight: 700; color: var(--ink); }
+  .item .d { font-size: 13px; color: var(--ink-2); margin-top: 3px; }
+  .item .ref { font-size: 12px; color: var(--accent); margin-top: 3px; }
+  .item .ref::before { content: "依据："; color: var(--ink-3); }
+  .sev { flex: none; font-size: 11.5px; font-weight: 700; border-radius: 4px; padding: 2px 8px; margin-top: 3px; }
+  .sev-h { background: #fdeaea; color: var(--red); }
+  .sev-m { background: #fdf3e3; color: var(--amber); }
+  .sev-l { background: #e6f5ee; color: var(--green); }
+  .item.done .q { color: var(--ink-3); text-decoration: line-through; }
+
+  /* 进度条 */
+  #progressBox { position: sticky; top: 0; z-index: 20; background: rgba(255,255,255,.95); border-bottom: 1px solid var(--line); padding: 10px 56px; display: flex; align-items: center; gap: 14px; }
+  #progressBar { flex: 1; height: 8px; background: var(--panel-2); border-radius: 4px; overflow: hidden; }
+  #progressFill { height: 100%; width: 0; background: linear-gradient(90deg, var(--primary), var(--accent)); transition: width .3s; }
+  #progressText { font-size: 13px; font-weight: 700; color: var(--primary-deep); min-width: 130px; }
+
+  .tag-chip { display: inline-block; background: var(--panel-2); border: 1px solid var(--line); border-radius: 6px; padding: 2px 10px; font-size: 12.5px; color: var(--ink-2); margin: 2px 4px 2px 0; }
+  .callout { border-left: 4px solid var(--primary); background: var(--panel-2); border-radius: 0 8px 8px 0; padding: 12px 16px; font-size: 13.5px; color: var(--ink-2); margin: 12px 0; }
+  .callout.warn { border-color: var(--amber); }
+  .callout.good { border-color: var(--green); }
+  .risk-table td:first-child { width: 90px; }
+  .footer { text-align: center; font-size: 12px; color: var(--ink-3); padding: 18px; border-top: 1px solid var(--line); }
+  @media print { body { background: #fff; } .page { box-shadow: none; margin: 0; max-width: none; border-radius: 0; } #progressBox { display: none; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="hero">
+  <div class="tag">DATA COMPLIANCE AUDIT · 车联网隐私数据管理</div>
+  <h1>车联网数据中台隐私数据合规排查大纲</h1>
+  <div class="sub">基于国内法规要求 · 按「采集 — 传输 — 存储 — 使用」四环节展开 · 附逐项排查清单与法规依据</div>
+  <div class="meta">适用对象：车联网数据中台（数据采集链路 / TSP 平台 / 数据湖仓 / 数据服务层）｜编制日期：2026 年 11 月</div>
+</div>
+
+<div id="progressBox">
+  <span id="progressText">排查进度 0 / 0</span>
+  <div id="progressBar"><div id="progressFill"></div></div>
+</div>
+
+<div class="content">
+
+  <h2>一、排查背景与目标</h2>
+  <p class="lead">车联网数据中台汇聚车辆轨迹、车况信号、座舱感知、车外影像、用户账号等多源数据，天然包含大量个人信息与重要数据，是监管关注的核心场景。本次排查以国内现行法规为标尺，对中台<b>采集、传输、存储、使用</b>四个环节逐项体检，形成问题清单与整改台账。</p>
+  <p><b>排查目标：</b>① 摸清中台所涉个人信息的类型、数量、流转路径与存储位置；② 对照法规逐项核查合规缺口；③ 按"高/中/低"风险定级并输出整改建议；④ 建立常态化自查机制。</p>
+
+  <h2>二、法规依据总览</h2>
+  <table>
+    <thead><tr><th style="width:250px;">法规 / 标准</th><th style="width:100px;">生效时间</th><th>对车联网数据中台的核心要求</th></tr></thead>
+    <tbody>
+      <tr><td><b>《网络安全法》</b></td><td>2017.6</td><td>网络运行安全、等级保护、日志留存（不少于 6 个月）、关键信息基础设施保护</td></tr>
+      <tr><td><b>《数据安全法》</b></td><td>2021.9</td><td>数据分类分级、重要数据目录与风险评估、数据安全保护义务</td></tr>
+      <tr><td><b>《个人信息保护法》</b></td><td>2021.11</td><td>知情同意、最小必要、敏感个人信息单独同意、个人权利响应、委托处理与对外提供规则、跨境三条路径</td></tr>
+      <tr><td><b>《汽车数据安全管理若干规定（试行）》</b>（网信办等五部门）</td><td>2021.10</td><td>车内处理、默认不收集、精度范围适用、脱敏处理等原则；重要数据界定与<b>境内存储</b>；重要数据处理者<b>年度报告义务</b>；出境安全评估</td></tr>
+      <tr><td><b>《工业和信息化领域数据安全管理办法（试行）》</b></td><td>2023.1</td><td>工业/车联网领域重要数据识别、目录报备、定期风险评估与事件报告</td></tr>
+      <tr><td><b>GB/T 41871《信息安全技术 汽车数据处理安全要求》</b></td><td>2022</td><td>车外数据（人脸/车牌）匿名化、座舱数据车内处理、位置轨迹精度控制等技术要求</td></tr>
+      <tr><td><b>GB 44495 / GB 44496（整车信息安全 / 软件升级强制国标）</b></td><td>2026.1（新车型）</td><td>车云通信安全、OTA 升级安全、入侵检测与数据记录要求</td></tr>
+      <tr><td><b>《数据出境安全评估办法》《个人信息出境标准合同办法》《促进和规范数据跨境流动规定》</b></td><td>2022–2024</td><td>数据出境三条合规路径（安全评估 / 标准合同 / 保护认证）及豁免情形</td></tr>
+      <tr><td><b>《汽车数据出境安全指引》（2026 版）</b></td><td>2026</td><td>汽车数据出境情形识别、申报口径与安全评估操作指引</td></tr>
+    </tbody>
+  </table>
+
+  <h2>三、排查范围与方法</h2>
+  <h3>3.1 排查对象（车联网数据中台全景）</h3>
+  <p>
+    <span class="tag-chip">车端采集层：T-BOX / 域控 / 座舱摄像头 / DMS / 麦克风 / 车外环视摄像头</span>
+    <span class="tag-chip">接入层：GB 32960 国标上报 / 私有协议接入 / Kafka 消息管道</span>
+    <span class="tag-chip">中台处理层：实时计算 / 离线数仓（DWD/DWS/ADS）/ 数据湖</span>
+    <span class="tag-chip">服务层：API 网关 / 数据服务 / 报表看板 / 对外共享接口</span>
+    <span class="tag-chip">关联系统：车主 App / 账号中心 / OTA 平台 / 呼叫中心</span>
+  </p>
+  <h3>3.2 排查方法</h3>
+  <table>
+    <thead><tr><th style="width:130px;">方法</th><th>说明</th><th style="width:220px;">输出物</th></tr></thead>
+    <tbody>
+      <tr><td><b>资料审阅</b></td><td>隐私政策、告知同意文案、数据分类分级清单、重要数据目录、出境申报材料、历史评估报告</td><td>文档完备性核对表</td></tr>
+      <tr><td><b>系统核查</b></td><td>核查采集配置项、埋点清单、加密策略、存储位置与权限模型、API 出参</td><td>系统配置证据截图</td></tr>
+      <tr><td><b>抽样验证</b></td><td>抽样车辆实测：关断采集开关后是否仍上报；抓包验证传输加密；抽样数据表核查明文字段与脱敏效果；匿名化算法有效性抽测</td><td>实测记录与样例数据</td></tr>
+      <tr><td><b>人员访谈</b></td><td>访谈产品（需求来源）、研发（实现方式）、运维（权限与日志）、客服（个人权利响应流程）</td><td>访谈纪要</td></tr>
+    </tbody>
+  </table>
+
+  <h2>四、环节一：数据采集排查</h2>
+  <div class="stage" data-stage="采集">
+    <div class="stage-head"><span class="no">01</span><span class="t">采集环节：合法、知情、最小必要</span><span class="law">核心依据：PIPL / 汽车数据规定 / GB/T 41871</span></div>
+    <label class="item"><input type="checkbox"><div class="body"><div class="q">1.1 是否建立全量《个人信息采集清单》？</div><div class="d">逐项列出中台采集的个人信息类型（车辆位置轨迹、行驶状态、座舱影像/语音、DMS 驾驶员状态、车外视频、账号资料、支付信息、生物识别特征等），标明采集渠道、频率、精度与业务用途；无清单即视为高风险。</div><div class="ref">PIPL 最小必要原则；《汽车数据规定》第六条</div></div><span class="sev sev-h">高</span></label>
+    <label class="item"><input type="checkbox"><div class="body"><div class="q">1.2 告知同意机制是否完备？</div><div class="d">隐私政策在 App、车机端双渠道公示并以显著方式提示；处理敏感个人信息（位置轨迹、生物识别、座舱影像）取得<b>单独同意</b>；隐私政策变更重新征求同意；拒绝同意时核心驾驶功能不受影响（不得捆绑）。</div><div class="ref">PIPL 第十七条、第二十九条；App 违法违规收集认定方法</div></div><span class="sev sev-h">高</span></label>
+    <label class="item"><input type="checkbox"><div class="body"><div class="q">1.3 是否落实「默认不收集 + 车内处理优先」原则？</div><div class="d">座舱数据（影像、语音、指纹、声纹、心率等）默认不向车外提供，确需提供时逐项征得同意；可通过车内本地处理（匿名化、脱敏）满足业务需求的，不得上传原始数据。</div><div class="ref">《汽车数据规定》第五、六条；GB/T 41871</div></div><span class="sev sev-h">高</span></label>
+    <label class="item"><input type="checkbox"><div class="body"><div class="q">1.4 车外人脸、车牌是否匿名化处理？</div><div class="d">车外摄像头采集的包含人脸、车牌的视频/图像数据，上传前在车端完成匿名化（打码/模糊），中台不留存可识别原始影像；抽测匿名化算法有效性（不可逆还原）。</div><div class="ref">《汽车数据规定》第六条；GB/T 41871 车外数据要求</div></div><span class="sev sev-h">高</span></label>
+    <label class="item"><input type="checkbox"><div class="body"><div class="q">1.5 位置数据是否落实精度范围适用？</div><div class="d">因业务需要（导航、充电规划）确需精确位置的按需采集；轨迹类数据在中台是否做降精度处理（如栅格化）；是否存在长期全量留存逐秒级轨迹且无必要性的情况。</div><div class="ref">《汽车数据规定》第五条；PIPL 最小必要</div></div><span class="sev sev-m">中</span></label>
+    <label class="item"><input type="checkbox"><div class="body"><div class="q">1.6 敏感区域地理信息采集是否受控？</div><div class="d">车辆经过军事管理区、国防科工单位及县级以上党政机关等<b>重要敏感区域</b>的地理信息、人员流量、车辆流量数据，按重要数据管理：是否已识别、是否停止采集/及时删除、有无专区隔离。</div><div class="ref">《汽车数据规定》第三条（重要数据界定）</div></div><span class="sev sev-h">高</span></label>
+    <label class="item"><input type="checkbox"><div class="body"><div class="q">1.7 用户是否可便捷关闭采集/恢复出厂设置？</div><div class="d">车主可通过车机或 App 一键关闭数据上报（除法规强制项如国标 GB 32960 上报）；车辆转让、报废时提供便捷的删除个人数据途径。</div><div class="ref">《汽车数据规定》第七条；PIPL 删除权</div></div><span class="sev sev-m">中</span></label>
+    <label class="item"><input type="checkbox"><div class="body"><div class="q">1.8 车型/传感器新增采集是否走合规评审？</div><div class="d">新车型、新传感器、新埋点上线前有隐私合规评审（PIA 个人信息保护影响评估）流程，防止"先上车后补票"。</div><div class="ref">PIPL 第五十五条</div></div><span class="sev sev-m">中</span></label>
+  </div>
+
+  <h2>五、环节二：数据传输排查</h2>
+  <div class="stage" data-stage="传输">
+    <div class="stage-head"><span class="no">02</span><span class="t">传输环节：加密、防篡改、出境受控</span><span class="law">核心依据：网络安全法 / GB 44495 / 出境三部规章</span></div>
+    <label class="item"><input type="checkbox"><div class="body"><div class="q">2.1 车—云传输是否全链路加密？</div><div class="d">T-BOX/座舱到 TSP/中台的通道采用 TLS1.2+ 或国密（SM2/SM4）；抓包实测无明文传输（重点：位置、影像、账号口令字段）；证书有效期管理、防中间人攻击。</div><div class="ref">网络安全法；GB 44495 车云通信安全要求</div></div><span class="sev sev-h">高</span></label>
+    <label class="item"><input type="checkbox"><div class="body"><div class="q">2.2 车端与云端身份双向鉴权是否有效？</div><div class="d">车端证书/密钥唯一绑定车辆（VIN 级），防止伪造车辆批量注入假数据；接口调用有签名与防重放机制。</div><div class="ref">GB 44495；车联网身份认证体系要求</div></div><span class="sev sev-m">中</span></label>
+    <label class="item"><input type="checkbox"><div class="body"><div class="q">2.3 中台内部与对外接口传输是否加密受控？</div><div class="d">组件间（Kafka/计算引擎/数仓）敏感字段传输加密或走内网隔离；API 网关对敏感字段出参强制脱敏；第三方回调地址白名单管理。</div><div class="ref">GB/T 41871；数据服务接口安全要求</div></div><span class="sev sev-m">中</span></label>
+    <label class="item"><input type="checkbox"><div class="body"><div class="q">2.4 数据出境路径是否全部识别并合规申报？</div><div class="d">绘制中台数据出境地图（境外服务器、境外研发/售后团队访问、境外云区域、海外呼叫中心调阅）；逐一判定出境路径：重要数据及大规模个人信息出境走<b>安全评估</b>，其他个人信息走标准合同/认证，对照《汽车数据出境安全指引（2026 版）》逐情形申报；出境前完成匿名化/去标识化的复核。</div><div class="ref">《汽车数据规定》第八至十一条；出境评估办法 / 标准合同办法 / 促进和规范数据跨境流动规定</div></div><span class="sev sev-h">高</span></label>
+    <label class="item"><input type="checkbox"><div class="body"><div class="q">2.5 跨国传输链路是否配置安全防护与审计？</div><div class="d">跨境专线/通道有访问审计、流量监控；境外访问账号单独管理并最小授权；传输日志留存不少于 6 个月。</div><div class="ref">网络安全法日志留存要求</div></div><span class="sev sev-m">中</span></label>
+    <label class="item"><input type="checkbox"><div class="body"><div class="q">2.6 与第三方的数据传输是否有合同约束？</div><div class="d">向保险公司、生态合作方、经销商传输数据前签订数据处理协议，明确目的、期限、安全义务与违约责任；传输行为在中台有留痕。</div><div class="ref">PIPL 第二十一条（委托处理）</div></div><span class="sev sev-m">中</span></label>
+  </div>
+
+  <h2>六、环节三：数据存储排查</h2>
+  <div class="stage" data-stage="存储">
+    <div class="stage-head"><span class="no">03</span><span class="t">存储环节：境内存储、加密、期限控制</span><span class="law">核心依据：汽车数据规定 / 数安法 / 网络安全法</span></div>
+    <label class="item"><input type="checkbox"><div class="body"><div class="q">3.1 重要数据是否全部境内存储？</div><div class="d">对照重要数据目录（敏感区域地理信息、车人流量的经济运行数据、超 10 万人规模的个人信息、能量消耗数据等），核实存储物理位置在境内；境外灾备/副本一并排查。</div><div class="ref">《汽车数据规定》第八条</div></div><span class="sev sev-h">高</span></label>
+    <label class="item"><input type="checkbox"><div class="body"><div class="q">3.2 是否建立数据分类分级与重要数据目录？</div><div class="d">按国家《数据分类分级规则》与行业要求完成中台全量数据表分级打标（公开/内部/敏感/重要）；重要数据目录已按要求向工信/网信部门报备并动态更新。</div><div class="ref">数安法第二十一条；工信领域数据安全管理办法</div></div><span class="sev sev-h">高</span></label>
+    <label class="item"><input type="checkbox"><div class="body"><div class="q">3.3 敏感字段是否加密或去标识化存储？</div><div class="d">账号口令、生物特征、身份证号、精确轨迹等加密存储（密钥独立管理）；分析型库表优先以去标识化形式落库，重新识别密钥与数据分离保管。</div><div class="ref">PIPL 第五十一条；GB/T 41871</div></div><span class="sev sev-h">高</span></label>
+    <label class="item"><input type="checkbox"><div class="body"><div class="q">3.4 存储访问控制与审计是否完备？</div><div class="d">数据库/HDFS/OBS 桶按最小权限授权（RBAC），禁止开发人员长期持有生产库高权限；敏感表访问全量审计日志，日志防篡改且留存 ≥6 个月。</div><div class="ref">网络安全法；数安法</div></div><span class="sev sev-m">中</span></label>
+    <label class="item"><input type="checkbox"><div class="body"><div class="q">3.5 保存期限是否最小化并有到期处置？</div><div class="d">各类数据设定保存期限（原始报文、明细轨迹、影像等分档），到期自动删除或匿名化；注销账号用户数据按承诺时限删除/匿名化，并能提供处置证据。</div><div class="ref">PIPL 第十九条、第四十七条</div></div><span class="sev sev-m">中</span></label>
+    <label class="item"><input type="checkbox"><div class="body"><div class="q">3.6 备份与容灾是否覆盖合规要求？</div><div class="d">备份策略与生产一致加密；恢复演练记录齐全；备份介质同样纳入分级访问控制（历史备份是明文泄露高发区）。</div><div class="ref">数安法；等保 2.0</div></div><span class="sev sev-l">低</span></label>
+  </div>
+
+  <h2>七、环节四：数据使用排查</h2>
+  <div class="stage" data-stage="使用">
+    <div class="stage-head"><span class="no">04</span><span class="t">使用环节：权限、脱敏、对外提供、个人权利</span><span class="law">核心依据：PIPL / 数安法 / 汽车数据规定</span></div>
+    <label class="item"><input type="checkbox"><div class="body"><div class="q">4.1 数据使用是否与告知目的一致？</div><div class="d">逐个中台应用（报表、算法训练、UBI、营销）核对用途是否超出采集时告知范围；超范围使用（如把座舱数据用于营销画像）须重新取得同意或停止。</div><div class="ref">PIPL 第六条、第二十三条</div></div><span class="sev sev-h">高</span></label>
+    <label class="item"><input type="checkbox"><div class="body"><div class="q">4.2 分析与 AI 训练数据是否脱敏/匿名化？</div><div class="d">模型训练、跨域分析默认使用去标识化数据集；抽样验证匿名化后无法再识别特定自然人；涉及 10 万人以上个人信息的处理活动是否开展个人信息保护影响评估（PIA）。</div><div class="ref">PIPL 第五十五、五十六条</div></div><span class="sev sev-h">高</span></label>
+    <label class="item"><input type="checkbox"><div class="body"><div class="q">4.3 对外提供是否履行"再告知 + 单独同意 + 合规评估"？</div><div class="d">向第三方提供个人信息的：告知接收方身份、联系方式、处理目的方式并取得单独同意（或确保合法基础）；对外接口清单与实际调用一致，杜绝"裸接口"。</div><div class="ref">PIPL 第二十三条</div></div><span class="sev sev-h">高</span></label>
+    <label class="item"><input type="checkbox"><div class="body"><div class="q">4.4 个人信息权利响应通道是否有效？</div><div class="d">车主可通过 App/客服便捷行使查询、复制、更正、删除、撤回同意、注销账号权利；响应时限（15 个工作日内）达标；注销后中台侧数据同步处置——抽取工单实测闭环时长。</div><div class="ref">PIPL 第四章；《汽车数据规定》第七条</div></div><span class="sev sev-h">高</span></label>
+    <label class="item"><input type="checkbox"><div class="body"><div class="q">4.5 自动化决策与画像是否合规？</div><div class="d">涉及个性化推荐、差异化定价（UBI 车险）、远程控制决策的：提供不针对个人特征的选项或便捷拒绝方式；不进行交易价格不合理差别对待。</div><div class="ref">PIPL 第二十四条</div></div><span class="sev sev-m">中</span></label>
+    <label class="item"><input type="checkbox"><div class="body"><div class="q">4.6 重要数据风险评估与年度报告是否按期履行？</div><div class="d">处理重要数据的：每年至少开展一次数据安全风险评估并整改；按要求向省级网信部门报送<b>汽车数据安全管理情况年度报告</b>（处理重要数据情况、安全防护措施、出境情况、用户投诉及处置等）；发生重要数据或大规模个人信息泄露事件按时限上报。</div><div class="ref">《汽车数据规定》第十、十二条；数安法；工信领域数据安全管理办法</div></div><span class="sev sev-h">高</span></label>
+    <label class="item"><input type="checkbox"><div class="body"><div class="q">4.7 事故调查与执法调取是否有受控通道？</div><div class="d">对照道交法修订草案方向：公安交管因事故调查可调取车辆数据——中台是否建立审批留痕的调取通道与数据出证流程（谁批准、调了什么、给了谁），防止数据被随意导出。</div><div class="ref">道交法修订草案（征求意见阶段）；PIPL 第三十五条</div></div><span class="sev sev-m">中</span></label>
+    <label class="item"><input type="checkbox"><div class="body"><div class="q">4.8 数据安全事件应急机制是否演练？</div><div class="d">泄露/勒索应急预案齐备，明确上报时限（重要数据事件向省级以上主管部门报告）、通知受影响个人的流程；近一年内有实战演练记录。</div><div class="ref">数安法第二十九条；PIPL 第五十七条</div></div><span class="sev sev-m">中</span></label>
+  </div>
+
+  <h2>八、风险定级与整改闭环</h2>
+  <table class="risk-table">
+    <thead><tr><th>级别</th><th>判定标准</th><th>处置要求</th></tr></thead>
+    <tbody>
+      <tr><td><b style="color:var(--red);">高风险</b></td><td>直接触碰红线：重要数据未境内存储、出境未申报、无单独同意采集敏感信息、车外影像未匿名化、重要数据年度报告缺失等</td><td>立即上报数据安全归口部门，<b>7 个工作日内</b>出整改方案，必要时暂停相关数据流</td></tr>
+      <tr><td><b style="color:var(--amber);">中风险</b></td><td>机制存在但执行有缺口：权限过宽、留存超期、PIA 缺失、第三方协议不全等</td><td>纳入季度整改计划，明确责任人与完成时限</td></tr>
+      <tr><td><b style="color:var(--green);">低风险</b></td><td>优化项：日志留存不齐、演练频次不足等</td><td>纳入日常运维改进</td></tr>
+    </tbody>
+  </table>
+  <div class="callout good"><b>闭环要求：</b>每条排查项输出「证据快照 + 结论（合规/缺口）+ 整改动作 + 责任人 + 时限」，汇总为《车联网数据中台隐私合规排查报告》，整改后开展<b>复测验证</b>并归档，形成年度例行排查机制。</div>
+
+  <h2>九、排查组织与输出物</h2>
+  <table>
+    <thead><tr><th style="width:140px;">角色</th><th>职责</th></tr></thead>
+    <tbody>
+      <tr><td><b>排查组长</b></td><td>数据合规/安全团队负责人：统筹进度、风险定级裁决、报告签发</td></tr>
+      <tr><td><b>中台研发/运维</b></td><td>提供系统配置、数据表清单、权限模型、加解密实现证据，执行实测配合</td></tr>
+      <tr><td><b>法务/合规</b></td><td>隐私政策与告知同意文案审阅、出境申报材料核对、对外协议检查</td></tr>
+      <tr><td><b>业务代表</b></td><td>逐项确认数据用途与业务必要性，配合超范围使用整改</td></tr>
+      <tr><td><b>输出物</b></td><td>① 排查项逐条结论与证据包　② 问题清单（按四环节/风险级别）　③ 整改台账与复测记录　④ 年度合规报告基线材料</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn"><b>提示：</b>《道路交通安全法（修订草案）》已强化车企数据安全义务，公安交管因事故调查可调取车辆数据；本清单第 4.7 项为前瞻排查项。法规持续更新中，排查前请核对最新版本及配套细则。</div>
+
+</div>
+<div class="footer">车联网数据中台隐私数据合规排查大纲 · 内部工作文档 · 2026 年 11 月　｜　打印时自动隐藏进度条，勾选状态可导出截图存档</div>
+</div>
+
+<script>
+  const boxes = Array.from(document.querySelectorAll('.item input[type=checkbox]'));
+  const fill = document.getElementById('progressFill');
+  const text = document.getElementById('progressText');
+  function update(){
+    const done = boxes.filter(b => b.checked).length;
+    text.textContent = '排查进度 ' + done + ' / ' + boxes.length;
+    fill.style.width = (boxes.length ? done/boxes.length*100 : 0) + '%';
+    boxes.forEach(b => b.closest('.item').classList.toggle('done', b.checked));
+  }
+  boxes.forEach(b => b.addEventListener('change', update));
+  update();
+</script>
+</body>
+</html>

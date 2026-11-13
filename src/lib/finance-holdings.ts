@@ -4,6 +4,7 @@ export const USD_TO_CNY = 7.4;
 export const HKD_TO_CNY = 0.94;
 
 export type HoldingRegion = "overseas" | "domestic";
+export type HoldingInputKind = "amount" | "shares";
 
 export type HoldingConfig = {
   account: FinanceHoldingAccount;
@@ -15,6 +16,8 @@ export type HoldingConfig = {
   rateToCny: number;
   formKey: string;
   decimals: number;
+  inputKind: HoldingInputKind;
+  priceSymbol?: "QQQ" | "VOO";
   /** 归入 SCHWAB 分组展示 */
   schwabGroup?: boolean;
 };
@@ -26,6 +29,7 @@ const usdSchwabBase = {
   currencyLabel: "美元",
   rateToCny: USD_TO_CNY,
   decimals: 2,
+  inputKind: "amount" as const,
   schwabGroup: true,
 };
 
@@ -35,12 +39,16 @@ export const schwabHoldingConfigs: HoldingConfig[] = [
     label: "QQQ",
     formKey: "schwabQqq",
     ...usdSchwabBase,
+    inputKind: "shares",
+    priceSymbol: "QQQ",
   },
   {
     account: "SCHWAB_VOO",
     label: "VOO",
     formKey: "schwabVoo",
     ...usdSchwabBase,
+    inputKind: "shares",
+    priceSymbol: "VOO",
   },
   {
     account: "SCHWAB_OTHER",
@@ -67,6 +75,7 @@ export const financeHoldingConfigs: HoldingConfig[] = [
     rateToCny: HKD_TO_CNY,
     formKey: "hkCard",
     decimals: 2,
+    inputKind: "amount",
   },
   {
     account: "BANK_CARD",
@@ -78,6 +87,7 @@ export const financeHoldingConfigs: HoldingConfig[] = [
     rateToCny: 1,
     formKey: "bankCard",
     decimals: 2,
+    inputKind: "amount",
   },
   {
     account: "ALIPAY",
@@ -88,6 +98,7 @@ export const financeHoldingConfigs: HoldingConfig[] = [
     rateToCny: 1,
     formKey: "alipay",
     decimals: 2,
+    inputKind: "amount",
   },
   {
     account: "EASTMONEY",
@@ -98,6 +109,7 @@ export const financeHoldingConfigs: HoldingConfig[] = [
     rateToCny: 1,
     formKey: "eastmoney",
     decimals: 2,
+    inputKind: "amount",
   },
   {
     account: "BN",
@@ -108,6 +120,7 @@ export const financeHoldingConfigs: HoldingConfig[] = [
     rateToCny: 1,
     formKey: "bn",
     decimals: 2,
+    inputKind: "amount",
   },
 ];
 
@@ -126,6 +139,10 @@ export function holdingAccountLabel(account: FinanceHoldingAccount) {
   if (!config) return account;
   if (config.schwabGroup) return `SCHWAB · ${config.label}`;
   return config.label;
+}
+
+export function isMarketPricedHolding(config: HoldingConfig) {
+  return config.inputKind === "shares" && config.priceSymbol != null;
 }
 
 export function amountMinorToDisplay(amountMinor: number, currency: HoldingConfig["currency"]) {
@@ -254,13 +271,18 @@ export function holdingEditInputValue(amountMinor: number, decimals: number) {
 }
 
 export type FinanceHoldingsFormValidation =
-  | { ok: true; amounts: Map<FinanceHoldingAccount, number> }
+  | {
+      ok: true;
+      amounts: Map<FinanceHoldingAccount, number>;
+      quantities: Map<FinanceHoldingAccount, number>;
+    }
   | { ok: false; missingLabels: string[]; invalidLabels: string[] };
 
 export function validateFinanceHoldingsForm(formData: FormData): FinanceHoldingsFormValidation {
   const missingLabels: string[] = [];
   const invalidLabels: string[] = [];
   const amounts = new Map<FinanceHoldingAccount, number>();
+  const quantities = new Map<FinanceHoldingAccount, number>();
 
   for (const config of financeHoldingConfigs) {
     const label = holdingAccountLabel(config.account);
@@ -276,13 +298,15 @@ export function validateFinanceHoldingsForm(formData: FormData): FinanceHoldings
       continue;
     }
     const factor = 10 ** config.decimals;
-    amounts.set(config.account, Math.round(value * factor));
+    const minor = Math.round(value * factor);
+    if (config.inputKind === "shares") quantities.set(config.account, minor);
+    else amounts.set(config.account, minor);
   }
 
   if (missingLabels.length > 0 || invalidLabels.length > 0) {
     return { ok: false, missingLabels, invalidLabels };
   }
-  return { ok: true, amounts };
+  return { ok: true, amounts, quantities };
 }
 
 export const overseasHoldings = financeHoldingConfigs.filter(

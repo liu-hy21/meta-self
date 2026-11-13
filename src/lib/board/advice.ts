@@ -4,6 +4,7 @@ import {
   type BoardAdviceSectionView,
 } from "@/lib/board/advice-sections";
 import type { BoardSnapshot } from "@/lib/board/snapshot";
+import { requestLlmChat } from "@/lib/llm-config";
 
 const cache = new Map<string, { at: number; texts: Partial<Record<BoardAdviceSectionId, string>> }>();
 const TTL_MS = 30 * 60 * 1000;
@@ -12,6 +13,7 @@ const sectionIds = boardAdviceSections.map((section) => section.id);
 
 function cacheKey(snapshot: BoardSnapshot) {
   return JSON.stringify({
+    userId: snapshot.userId,
     metrics: snapshot.metrics.map((metric) => [metric.id, metric.value, metric.recordedAt.toISOString()]),
     foods: snapshot.foods.map((food) => [food.label, food.items]),
     mind: snapshot.mind,
@@ -124,9 +126,6 @@ function emptySections(): BoardAdviceSectionView[] {
 export async function loadBoardAdviceSections(snapshot: BoardSnapshot): Promise<BoardAdviceSectionView[]> {
   if (!hasAnyContext(snapshot)) return emptySections();
 
-  const apiKey = process.env.DEEPSEEK_API_KEY;
-  if (!apiKey) return emptySections();
-
   const key = cacheKey(snapshot);
   const hit = cache.get(key);
   if (hit && Date.now() - hit.at < TTL_MS) {
@@ -138,45 +137,21 @@ export async function loadBoardAdviceSections(snapshot: BoardSnapshot): Promise<
   }
 
   const categories = buildCategoryPayload(snapshot);
-  const response = await fetch("https://api.deepseek.com/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "deepseek-flash",
-      thinking: { type: "disabled" },
-      temperature: 0.3,
-      max_tokens: 1200,
-      response_format: { type: "json_object" },
-      messages: [
-        {
-          role: "system",
-          content:
-            "你给个人看板写分区建议。输入是 categories 对象，键为 diet、sleep、fitness、exam、mind、work、stack、relation、assets。每个键只根据对应数据写一条建议，不超过 48 个字；该分区没有可用信息则返回空字符串。不要诊断，不要写正常或异常，不要打分，不要给投资建议。只返回 JSON 对象，九个键都要出现，值为字符串。",
-        },
-        { role: "user", content: JSON.stringify({ categories }) },
-      ],
-    }),
-    cache: "no-store",
-  });
-
   const texts: Partial<Record<BoardAdviceSectionId, string>> = {};
-  if (response.ok) {
-    const body = (await response.json()) as { choices?: { message?: { content?: string } }[] };
-    const content = body.choices?.[0]?.message?.content;
-    if (content) {
-      try {
-        const parsed = JSON.parse(content) as Record<string, unknown>;
-        for (const id of sectionIds) {
-          const raw = parsed[id];
-          texts[id] = typeof raw === "string" ? raw.trim() : "";
-        }
-      } catch {
-        // keep empty
-      }
+  try {
+    const content = (await requestLlmChat(
+      snapshot.userId,
+      "你给个人看板写分区建议。输入是 categories 对象，键为 diet、sleep、fitness、exam、mind、work、stack、relation、assets。每个键只根据对应数据写一条建议，不超过 48 个字；该分区没有可用信息则返回空字符串。不要诊断，不要写正常或异常，不要打分，不要给投资建议。只返回 JSON 对象，九个键都要出现，值为字符串。",
+      JSON.stringify({ categories }),
+      { temperature: 0.3, maxTokens: 1200, responseFormat: { type: "json_object" } },
+    )).content;
+    const parsed = JSON.parse(content) as Record<string, unknown>;
+    for (const id of sectionIds) {
+      const raw = parsed[id];
+      texts[id] = typeof raw === "string" ? raw.trim() : "";
     }
+  } catch {
+    // Keep the board usable when the configured model is unavailable.
   }
 
   cache.set(key, { at: Date.now(), texts });
